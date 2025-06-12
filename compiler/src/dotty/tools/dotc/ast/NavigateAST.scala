@@ -76,17 +76,23 @@ object NavigateAST {
     def childPath(it: Iterator[Any], path: List[Positioned]): List[Positioned] = {
       var bestFit: List[Positioned] = path
       while (it.hasNext) do
-        val path1 = it.next() match
-          case sel: untpd.Select if isRecoveryTree(sel) => path
-          case sel: untpd.Ident  if isPatternRecoveryTree(sel) => path
-          case p: Positioned if !p.isInstanceOf[Closure[?]] => singlePath(p, path)
-          case m: untpd.Modifiers => childPath(m.productIterator, path)
-          case xs: List[?] => childPath(xs.iterator, path)
-          case _ => path
-
+        val next = it.next()
+        val path1 = next match
+          case sel: untpd.Select if isRecoveryTree(sel) => 
+            path
+          case sel: untpd.Ident  if isPatternRecoveryTree(sel) => 
+            path
+          case p: Positioned if !p.isInstanceOf[Closure[?]] => 
+            singlePath(p, path)
+          case m: untpd.Modifiers => 
+            childPath(m.productIterator, path)
+          case xs: List[?] => 
+            childPath(xs.iterator, path)
+          case _ => 
+            path
+        
         if (path1 ne path) && ((bestFit eq path) || isBetterFit(bestFit, path1)) then
           bestFit = path1
-
       bestFit
     }
 
