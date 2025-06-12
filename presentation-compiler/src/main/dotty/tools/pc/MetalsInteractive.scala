@@ -119,6 +119,7 @@ object MetalsInteractive:
     path match
       // For a named arg, find the target `DefDef` and jump to the param
       case NamedArg(name, _) :: Apply(fn, _) :: _ =>
+        println("TUTAJ WSZEDLEM 1")
         val funSym = fn.symbol
         if funSym.is(Synthetic) && funSym.owner.is(CaseClass) then
           val sym = funSym.owner.info.member(name).symbol
@@ -131,21 +132,25 @@ object MetalsInteractive:
           List((sym, sym.info, None))
 
       case (_: untpd.ImportSelector) :: (imp: Import) :: _ =>
+        println("TUTAJ WSZEDLEM 2")
         importedSymbols(imp, _.span.contains(pos.span)).map(sym =>
           (sym, sym.info, None)
         )
 
       case (imp: ImportOrExport) :: _ =>
+        println("TUTAJ WSZEDLEM 3")
         importedSymbols(imp, _.span.contains(pos.span)).map(sym =>
           (sym, sym.info, None)
         )
 
       // wildcard param
       case head :: _ if (head.symbol.is(Param) && head.symbol.is(Synthetic)) =>
+        println("TUTAJ WSZEDLEM 4")
         List((head.symbol, head.typeOpt, None))
 
       case (head @ Select(target, name)) :: _
           if head.symbol.is(Synthetic) && name == StdNames.nme.apply =>
+        println("TUTAJ WSZEDLEM 5")
         val sym = target.symbol
         if sym.is(Synthetic) && sym.is(Module) then
           List((sym.companionClass, sym.companionClass.info, None))
@@ -155,16 +160,20 @@ object MetalsInteractive:
       case (head @ ApplySelect(select)) :: _
           if select.qualifier.sourcePos.contains(pos) &&
             select.name == StdNames.nme.apply =>
+        println("TUTAJ WSZEDLEM 6")
         List((head.symbol, head.typeOpt, None))
 
       // for Inlined we don't have a symbol, but it's needed to show proper type
       case (head @ Inlined(call, bindings, expansion)) :: _ =>
+        println("TUTAJ WSZEDLEM 7")
         List((call.symbol, head.typeOpt, None))
 
       // for comprehension
       case (head @ ApplySelect(select)) :: _ if isForSynthetic(head) =>
         // If the cursor is on the qualifier, return the symbol for it
         // `for { x <- List(1).head@@Option }`  returns the symbol of `headOption`
+
+        println("TUTAJ WSZEDLEM 8")
         if select.qualifier.sourcePos.contains(pos) then
           List((select.qualifier.symbol, select.qualifier.typeOpt, None))
         // Otherwise, returns the symbol of for synthetics such as "withFilter"
@@ -174,6 +183,7 @@ object MetalsInteractive:
       case Select(target, _) :: _
           if target.span.isSourceDerived &&
             target.sourcePos.contains(pos) =>
+        println("TUTAJ WSZEDLEM 9")
         List((target.symbol, target.typeOpt, None))
 
       /* In some cases type might be represented by TypeTree, however it's possible
@@ -189,6 +199,7 @@ object MetalsInteractive:
        */
       case (tpt: TypeTree) :: parent :: _
           if tpt.span != parent.span && !tpt.symbol.is(Synthetic) =>
+        println("TUTAJ WSZEDLEM 10")
         List((tpt.symbol, tpt.typeOpt, None))
 
       /* TypeTest class https://dotty.epfl.ch/docs/reference/other-new-features/type-test.html
@@ -196,6 +207,7 @@ object MetalsInteractive:
        */
       case (head @ CaseDef(pat, _, _)) :: _
           if pat.symbol.exists && defn.TypeTestClass == pat.symbol.owner =>
+        println("TUTAJ WSZEDLEM 11")
         pat match
           case UnApply(fun, _, pats) =>
             val tpeSym = pats.head.typeOpt.typeSymbol
@@ -207,6 +219,7 @@ object MetalsInteractive:
       case (Apply(Apply(TypeApply(fun, List(t1, t2)), List(ddef)), List(Literal(Constant(i: Int))))) :: _
         if fun.symbol.exists && fun.symbol.name == nme.apply &&
             fun.symbol.owner.exists && fun.symbol.owner == defn.NamedTupleModule.moduleClass =>
+        println("TUTAJ WSZEDLEM 12")
         def getIndex(t: Tree): Option[Type] =
           t.tpe.dealias match
             case AppliedType(_, args) => args.get(i)
@@ -219,6 +232,7 @@ object MetalsInteractive:
 
       case head :: (sel @ Select(_, name)) :: _
         if head.sourcePos.encloses(sel.sourcePos) && (name == StdNames.nme.apply || name == StdNames.nme.unapply) =>
+        println("TUTAJ WSZEDLEM 13")
           val optObjectSymbol = List(head.symbol).filter(sym => !(sym.is(Synthetic) && sym.is(Module)))
           val classSymbol = head.symbol.companionClass
           val optApplySymbol = List(sel.symbol).filter(sym => !sym.is(Synthetic))
@@ -227,7 +241,9 @@ object MetalsInteractive:
             case sym if sym.exists => (sym, sym.info, None)
 
       case path @ head :: tail =>
+        println("TUTAJ WSZEDLEM 14")
         if head.symbol.is(Exported) then
+          println("TUTAJ WSZEDLEM 15")
           val sym = head.symbol.sourceSymbol
           List((sym, sym.info, None))
         else if head.symbol != NoSymbol then
@@ -237,7 +253,8 @@ object MetalsInteractive:
               pos,
               indexed.ctx.source
             )
-          then List((head.symbol, head.typeOpt, None))
+          then 
+            List((head.symbol, head.typeOpt, None))
           else if head.symbol.is(Synthetic) then
             enclosingSymbolsWithExpressionType(
               tail,
