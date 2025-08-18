@@ -767,7 +767,8 @@ class CompletionInterpolatorSuite extends BaseCompletionSuite:
          |
          |  println(s"$host@@$path")}
          |""".stripMargin,
-      "host: String"
+      "host: String",
+      topLines = Some(1)
     )
 
   @Test def `show-when-writing-between-dollars-2` =
@@ -778,7 +779,8 @@ class CompletionInterpolatorSuite extends BaseCompletionSuite:
          |
          |  println(s"$ho@@$path")}
          |""".stripMargin,
-      "host: String"
+      "host: String",
+      topLines = Some(1)
     )
 
   @Test def `prepend-new-missing-interpolator` =

@@ -894,7 +894,8 @@ class CompletionOverrideSuite extends BaseCompletionSuite:
          |override def overTop: Int
          |""".stripMargin,
       includeDetail = false,
-      topLines = Some(2)
+      topLines = Some(2),
+      filter = (str) => str.contains("java.lang")
     )
 
   @Test def `override-word` =

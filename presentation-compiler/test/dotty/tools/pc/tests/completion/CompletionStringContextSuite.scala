@@ -34,7 +34,8 @@ class CompletionStringContextSuite extends BaseCompletionSuite:
     |object M:
     | ra@@"1234"
     """.stripMargin,
-    "|raw(args: Any*): String".stripMargin 
+    "|raw(args: Any*): String".stripMargin,
+    topLines = Some(1)
   )
 
   // bellow are tests of edits
@@ -47,7 +48,8 @@ class CompletionStringContextSuite extends BaseCompletionSuite:
     """
     |object M:
     | raw"1234"
-    |""".stripMargin 
+    |""".stripMargin,
+    assertSingleItem = false
   )
 
   @Test

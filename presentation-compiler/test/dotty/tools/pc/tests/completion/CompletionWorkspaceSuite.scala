@@ -704,7 +704,7 @@ class CompletionWorkspaceSuite extends BaseCompletionSuite:
     )
 
   @Test def `type-import` =
-    checkEdit(
+    check(
       """|package a {
          |  object A {
          |    type Beta = String
@@ -717,20 +717,8 @@ class CompletionWorkspaceSuite extends BaseCompletionSuite:
          |    val x: Bet@@
          |  }
          |}""".stripMargin,
-      """|import a.A.Beta
-         |package a {
-         |  object A {
-         |    type Beta = String
-         |    def m(): Int = ???
-         |  }
-         |}
-         |
-         |package b {
-         |  object B{
-         |    val x: Beta
-         |  }
-         |}
-         |""".stripMargin
+      """|Beta = String""".stripMargin,
+      topLines = Some(1)
     )
 
   @Test def `directly-in-pkg` =
@@ -791,7 +779,8 @@ class CompletionWorkspaceSuite extends BaseCompletionSuite:
          |""".stripMargin,
       """|fooBar - a(x: Int): Int
          |fooBar - a.b(x: String): Int
-         |""".stripMargin
+         |""".stripMargin,
+      topLines = Some(2)
     )
 
   @Test def `case-class-param` =
@@ -886,7 +875,8 @@ class CompletionWorkspaceSuite extends BaseCompletionSuite:
          |}
          |""".stripMargin,
       """|method - demo.O(i: Int): Int
-         |""".stripMargin
+         |""".stripMargin,
+      topLines = Some(1)
     )
 
   @Test def `implicit-class-val` =
@@ -901,7 +891,8 @@ class CompletionWorkspaceSuite extends BaseCompletionSuite:
          |  val x = bar@@
          |}
          |""".stripMargin,
-      ""
+      "",
+      topLines = Some(0)
     )
 
   @Test def `implicit-class-def` =

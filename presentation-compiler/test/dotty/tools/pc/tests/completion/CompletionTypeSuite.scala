@@ -49,5 +49,6 @@ class CompletionTypeSuite extends BaseCompletionSuite:
           |
           |""".stripMargin,
       s"""|itsAUnionType(): Int | String
-          |""".stripMargin
+          |""".stripMargin,
+      topLines = Some(1)
     )

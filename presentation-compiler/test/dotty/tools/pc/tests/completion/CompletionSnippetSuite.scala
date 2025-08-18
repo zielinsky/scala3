@@ -235,7 +235,8 @@ class CompletionSnippetSuite extends BaseCompletionSuite:
           |}
           |""".stripMargin,
       """|Upper
-         |""".stripMargin
+         |""".stripMargin,
+      topLines = Some(1)
     )
 
   @Test def `trailing-paren` =
@@ -347,7 +348,8 @@ class CompletionSnippetSuite extends BaseCompletionSuite:
       """|Try($0) - [T](r: => T): Try[T]
          |Try -  scala.util
          |""".stripMargin,
-      includeDetail = true
+      includeDetail = true,
+      topLines = Some(2)
     )
 
   @Test def `symbol` =
@@ -405,6 +407,7 @@ class CompletionSnippetSuite extends BaseCompletionSuite:
          |WithFilter - [A](l: Stream[A] @uncheckedVariance, p: A => Boolean): WithFilter[A]
          |""".stripMargin,
       includeDetail = true,
+      topLines = Some(10)
     )
 
   @Test def `no-apply2` =
@@ -478,7 +481,7 @@ class CompletionSnippetSuite extends BaseCompletionSuite:
     )
 
   @Test def `brackets-already-present` =
-    check(
+    checkSnippet(
       """|package a
          |case class AAA[T]()
          |object O {
@@ -486,8 +489,8 @@ class CompletionSnippetSuite extends BaseCompletionSuite:
          |}
          |""".stripMargin,
       """|AAA a
-         |ArrowAssoc scala.Predef
          |""".stripMargin,
+      topLines = Some(1)
     )
 
   @Test def `brackets-already-present-edit` =

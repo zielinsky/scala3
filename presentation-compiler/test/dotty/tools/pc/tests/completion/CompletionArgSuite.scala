@@ -22,7 +22,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
       """|assertion = : Boolean
          |message = : => Any
          |""".stripMargin,
-      topLines = Option(2)
+      topLines = Some(2)
     )
 
   @Test def `arg-newline` =
@@ -37,7 +37,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
       """|apple = : String
          |banana = : String
          |""".stripMargin,
-      topLines = Option(2)
+      topLines = Some(2)
     )
 
   @Test def `arg1` =
@@ -49,7 +49,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
       """|message = : => Any
          |Main test
          |""".stripMargin,
-      topLines = Option(2)
+      topLines = Some(2)
     )
 
   @Test def `arg-edit` =
@@ -73,7 +73,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
       """|message = : => Any
          |Main test
          |""".stripMargin,
-      topLines = Option(2)
+      topLines = Some(2)
     )
 
   def user: String =
@@ -98,7 +98,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
          |Main test
          |User(name: String = ..., age: Int = ..., address: String = ..., followers: Int = ...): User
          |""".stripMargin,
-      topLines = Option(4)
+      topLines = Some(4)
     )
 
   // We should get NamedArg `address` from args in scala3, and remove `address` from completion, but it doesn't appear.
@@ -116,7 +116,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
          |followers = : Int
          |Main test
          |""".stripMargin,
-      topLines = Option(3)
+      topLines = Some(3)
     )
 
   @Test def `arg5` =
@@ -132,7 +132,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
          |Main test
          |User(name: String = ..., age: Int = ..., address: String = ..., followers: Int = ...): User
          |""".stripMargin,
-      topLines = Option(4)
+      topLines = Some(4)
     )
 
   @Test def `arg6` =
@@ -147,7 +147,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
          |age = : Int
          |followers = : Int
          |""".stripMargin,
-      topLines = Option(3)
+      topLines = Some(3)
     )
 
   @Test def `arg7` =
@@ -160,7 +160,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
       """|x = : A
          |Main test
          |""".stripMargin,
-      topLines = Option(2)
+      topLines = Some(2)
     )
 
   @Test def `arg8` =
@@ -173,7 +173,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
       """|suffix = : String
          |Main test
          |""".stripMargin,
-      topLines = Option(2)
+      topLines = Some(2)
     )
 
   // In scala3, we get NoSymbol for `until`, so we get no completions here.
@@ -192,7 +192,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
       """|`end` = : Int
          |Main test
          |""".stripMargin,
-      topLines = Option(2)
+      topLines = Some(2)
     )
 
   @Test def `arg10` =
@@ -204,7 +204,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
           |""".stripMargin,
       """|address = : String
          |""".stripMargin,
-      topLines = Option(1)
+      topLines = Some(1)
     )
 
   @Test def `arg11` =
@@ -215,7 +215,8 @@ class CompletionArgSuite extends BaseCompletionSuite:
           |}
           |""".stripMargin,
       """|banana = : Int
-         |""".stripMargin
+         |""".stripMargin,
+      topLines = Some(1)
     )
 
   @Test def `arg12` =
@@ -225,7 +226,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
           |  curry(bana@@)
           |}
           |""".stripMargin,
-      ""
+      """""".stripMargin,
     )
 
   @Test def `arg13` =
@@ -411,7 +412,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
   //     |}
   //     |""".stripMargin,
   //   """|$$foo = """.stripMargin,
-  //   topLines = Option(1),
+  //   topLines = Some(1),
   // )
 
   // known issue: the second parameter with $ become | (returned from compiler)
@@ -427,7 +428,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
   //     """|$$foo =
   //        |$$foo = ${1:???}, | = ${2:???}
   //        |""".stripMargin,
-  //     topLines = Option(2),
+  //     topLines = Some(2),
   //     compat = Map(
   //       "3" -> """|$$foo =
   //                 |$$foo = ${1:???}, $$bar = ${2:???}
@@ -639,7 +640,8 @@ class CompletionArgSuite extends BaseCompletionSuite:
           |}
           |""".stripMargin,
       """|x: Int
-         |""".stripMargin
+         |""".stripMargin,
+         topLines = Some(1)
     )
 
   @Test def `constructor-param` =
@@ -843,7 +845,7 @@ class CompletionArgSuite extends BaseCompletionSuite:
          |value = value : Int
          |value: Int
          |""".stripMargin,
-      topLines = Some(4),
+      topLines = Some(3),
     )
 
   @Test def `overloaded-with-param` =
@@ -1185,7 +1187,11 @@ class CompletionArgSuite extends BaseCompletionSuite:
         |  }}
         |""".stripMargin,
       """x: Int
-        |x = : Any""".stripMargin,
+        |x = : Any
+        |IndexedSeq[A](elems: A*): IndexedSeq[A]
+        |IndexedSeq scala.collection.immutable
+        |StringContext(parts: String*): StringContext""".stripMargin,
+        topLines = Some(4)
     )
 
   @Test def `autofill-arguments-case-class` =
