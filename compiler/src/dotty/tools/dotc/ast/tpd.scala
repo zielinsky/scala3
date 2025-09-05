@@ -1036,7 +1036,7 @@ object tpd extends Trees.Instance[Type] with TypedTreeInfo {
       case ConstantType(c) if c.tag == StringTag =>
         singleton(tp).equal(tree)
       case tp: SingletonType =>
-        if tp.widen.derivesFrom(defn.ObjectClass) then
+        if tp.widen.derivesFrom(defn.ObjectClass) || tp.isInstanceOf[ThisType] then
           tree.ensureConforms(defn.ObjectType).select(defn.Object_eq).appliedTo(singleton(tp))
         else
           singleton(tp).equal(tree)
