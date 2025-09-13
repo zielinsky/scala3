@@ -330,9 +330,28 @@ object SpaceEngine {
       // unrelated numeric value classes can equal each other, so let's not consider type space intersection empty
       intersection
     else if isPrimToBox(tp1, tp2) || isPrimToBox(tp2, tp1) then intersection
+    // Special case: integral constant can match BigInt in runtime via ==
+    else if ((tp1 match
+        case ConstantType(c) => integralConstMatchesBigInt(c, tp2)
+        case _ => false
+      ) || (tp2 match
+        case ConstantType(c) => integralConstMatchesBigInt(c, tp1) 
+        case _ => false
+      )) then intersection
     else if TypeComparer.provablyDisjoint(tp1, tp2) then Empty
     else intersection
   }
+
+  /** Check if a constant is an integral type (Byte/Short/Char/Int/Long) */
+  private def isIntegralConst(c: Constant): Boolean =
+    c.tag match
+      case Constants.ByteTag | Constants.ShortTag | Constants.CharTag |
+           Constants.IntTag  | Constants.LongTag => true
+      case _ => false
+
+  /** Check if an integral constant can match against scala.math.BigInt type */
+  private def integralConstMatchesBigInt(c: Constant, scrutineeType: Type)(using Context): Boolean =
+    isIntegralConst(c) && (scrutineeType.derivesFrom(requiredClass("scala.math.BigInt")))
 
   /** Return the space that represents the pattern `pat` */
   def project(pat: Tree)(using Context): Space = trace(i"project($pat ${pat.className} ${pat.tpe})")(pat match {
