@@ -7065,8 +7065,6 @@ object Types extends TypeUtils {
           foldOver(n + 1, tp)
         case tp: TypeRef if tp.info.isTypeAlias =>
           apply(n, tp.superType)
-        case tp: TypeParamRef =>
-          apply(n, TypeComparer.bounds(tp))
         case tp: LazyRef =>
           if seen.contains(tp) then n
           else
