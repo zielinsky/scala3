@@ -1315,7 +1315,6 @@ object Build {
         file(s"${baseDirectory.value}/src/scala/quoted/runtime/StopMacroExpansion.scala"),
         file(s"${baseDirectory.value}/src/scala/compiletime/Erased.scala"),
         file(s"${baseDirectory.value}/src/scala/annotation/internal/onlyCapability.scala"),
-        file(s"${baseDirectory.value}/src/scala/annotation/internal/JavaRecordFields.scala"),
         file(s"${baseDirectory.value}/src/scala/runtime/VarArgsBuilder.scala"),
       )
     )

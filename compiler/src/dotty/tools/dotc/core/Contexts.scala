@@ -1002,6 +1002,8 @@ object Contexts {
      */
     private[dotc] var coverage: Coverage | Null = null
 
+    private[dotc] val recordsFields: util.HashMap[Symbol, List[String]] = util.HashMap()
+
     // Types state
     /** A table for hash consing unique types */
     private[core] val uniques: Uniques = Uniques()

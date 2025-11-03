@@ -30,7 +30,7 @@ import util.chaining.tap
 import collection.mutable
 import config.Printers.{overload, typr, unapp}
 import TypeApplications.*
-import Annotations.{Annotation, JavaRecordFieldsAnnotation}
+import Annotations.Annotation
 
 import Constants.{Constant, IntTag}
 import Denotations.SingleDenotation
@@ -186,9 +186,9 @@ object Applications {
   end seqSelectors
 
   def javaRecordFields(tp: Type)(using Context): List[Name] =
-    tp.typeSymbol.getAnnotation(defn.JavaRecordFieldsAnnot) match
-      case Some(JavaRecordFieldsAnnotation(fields)) => fields.map(termName)
-      case _ => assert(false)
+    val fields = ctx.base.recordsFields.lookup(tp.typeSymbol)
+    assert(fields != null, s"Missing Java record metadata for ${tp.typeSymbol.show}")
+    fields.map(termName)
 
   /** A utility class that matches results of unapplys with patterns. Two queriable members:
    *     val argTypes: List[Type]

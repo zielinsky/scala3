@@ -19,7 +19,6 @@ object MiMaFilters {
         ProblemFilters.exclude[MissingClassProblem]("scala.Conversion$"),
         ProblemFilters.exclude[MissingClassProblem]("scala.annotation.internal.RuntimeChecked"),
         ProblemFilters.exclude[MissingClassProblem]("scala.annotation.stableNull"),
-        ProblemFilters.exclude[MissingClassProblem]("scala.annotation.internal.JavaRecordFields"),
 
         ProblemFilters.exclude[DirectMissingMethodProblem]("scala.NamedTuple.namedTupleOrdering"),
         ProblemFilters.exclude[MissingClassProblem]("scala.NamedTuple$namedTupleOrdering"),

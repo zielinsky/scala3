@@ -1026,16 +1026,8 @@ class ClassfileParser(
             skipAttributes()
             name
 
-          classRoot.addAnnotation(
-            Annotation(
-              defn.JavaRecordFieldsAnnot,
-              Typed(
-                SeqLiteral(components.map(field => Literal(Constant(field))), TypeTree(defn.StringType)),
-                TypeTree(defn.RepeatedParamType.appliedTo(defn.StringType))
-              ),
-              NoSpan
-            )
-          )
+          ctx.base.recordsFields.update(sym, components)
+          
           val completer = RecordUnapplyCompleter()
           val member = newSymbol(
             moduleRoot.symbol,

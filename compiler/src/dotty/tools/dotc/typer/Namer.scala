@@ -1588,6 +1588,9 @@ class Namer { typer: Typer =>
 
     /** The type signature of a ClassDef with given symbol */
     override def completeInCreationContext(denot: SymDenotation): Unit = {
+      for fields <- original.removeAttachment(untpd.JavaRecordFields) do
+        creationContext.base.recordsFields.update(denot.symbol, fields)
+
       val parents = impl.parents
       val parentRefinements = new mutable.LinkedHashMap[Name, Type]
 

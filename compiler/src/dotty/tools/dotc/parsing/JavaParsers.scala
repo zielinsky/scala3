@@ -900,12 +900,7 @@ object JavaParsers {
             needsDummyConstr = true
           )
         ).withMods(mods.withFlags(Flags.JavaDefined | Flags.Final))
-          .withAddedAnnotation(
-            New(
-              ref(defn.JavaRecordFieldsAnnot),
-              header.map(field => Literal(Constant(field.name.toString))) :: Nil,
-            ).withSpan(Span(start))
-          )
+          .withAttachment(JavaRecordFields, header.map(_.name.toString))
       }
 
       val unapplyDef = {
