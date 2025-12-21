@@ -36,6 +36,7 @@ import io.AbstractFile
  */
 trait ParallelTesting extends RunnerOrchestration with CoverageSupport:
   import ParallelTesting.*
+  export Status.{Failure, Success, Timeout}
 
   /** If the running environment supports an interactive terminal, each `Test`
    *  will be run with a progress bar and real time feedback
@@ -917,25 +918,24 @@ trait ParallelTesting extends RunnerOrchestration with CoverageSupport:
       }
     }
 
-    private def verifyOutput(checkFile: Option[JFile], dir: JFile, testSource: TestSource, warnings: Int, reporters: Seq[TestReporter], logger: LoggedRunnable) = {
+    private def verifyOutput(checkFile: Option[JFile], dir: JFile, testSource: TestSource, warnings: Int, reporters: Seq[TestReporter], logger: LoggedRunnable) =
+      import testSource.{allToolArgs, runClassPath, title}
       if Properties.testsNoRun then addNoRunWarning()
-      else runMain(testSource.runClassPath, testSource.allToolArgs) match {
-        case Success(output) => checkFile match {
-          case Some(file) if file.exists => diffTest(testSource, file, output.linesIterator.toList, reporters, logger)
-          case _ =>
-        }
+      else
+        runMain(runClassPath, allToolArgs) match
+        case Success(output) =>
+          for file <- checkFile if file.exists do
+            diffTest(testSource, file, output.linesIterator.toList, reporters, logger)
+        case Failure("") =>
+          echo(s"Test '$title' failed with no output")
+          failTestSource(testSource)
         case Failure(output) =>
-          if output == "" then
-            echo(s"Test '${testSource.title}' failed with no output")
-          else
-            echo(s"Test '${testSource.title}' failed with output:")
-            echo(output)
+          echo(s"Test '$title' failed with output:")
+          echo(output)
           failTestSource(testSource)
         case Timeout =>
-          echo("failed because test " + testSource.title + " timed out")
-          failTestSource(testSource, TimeoutFailure(testSource.title))
-      }
-    }
+          echo(s"failed because test '$title' timed out")
+          failTestSource(testSource, TimeoutFailure(title))
 
     override def onSuccess(testSource: TestSource, reporters: Seq[TestReporter], logger: LoggedRunnable) =
       verifyOutput(testSource.checkFile, testSource.outDir, testSource, countWarnings(reporters), reporters, logger)
