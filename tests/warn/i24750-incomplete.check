@@ -1,0 +1,16 @@
+-- [E029] Pattern Match Exhaustivity Warning: tests/warn/i24750-incomplete.scala:6:35 ----------------------------------
+6 |  def incomplete(unit: TimeUnit) = unit match // error: match may not be exhaustive
+  |                                   ^^^^
+  |                                   match may not be exhaustive.
+  |
+  |                                   It would fail on pattern case: MILLISECONDS, SECONDS, MINUTES, HOURS, DAYS
+  |
+  | longer explanation available when compiling with `-explain`
+-- [E029] Pattern Match Exhaustivity Warning: tests/warn/i24750-incomplete.scala:14:35 ---------------------------------
+14 |  def incomplete(unit: TimeUnit) = unit match // error: match may not be exhaustive
+   |                                   ^^^^
+   |                                   match may not be exhaustive.
+   |
+   |                                   It would fail on pattern case: MILLISECONDS, SECONDS, MINUTES, HOURS, DAYS
+   |
+   | longer explanation available when compiling with `-explain`

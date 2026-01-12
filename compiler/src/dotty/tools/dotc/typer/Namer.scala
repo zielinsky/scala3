@@ -2209,7 +2209,17 @@ class Namer { typer: Typer =>
       val defaultTp = defaultParamType
       val pt = inherited.orElse(expectedDefaultArgType).orElse(fallbackProto).widenExpr
       val tp = typedAheadRhs(pt).tpe
-      if (defaultTp eq pt) && (tp frozen_<:< defaultTp) then
+
+      // For stable members pointing to Java enum values, preserve the singleton type.
+      // This ensures exhaustivity checking works correctly for re-exported Java enum values.
+      // See https://github.com/scala/scala3/issues/24750
+      def isJavaEnumValueRef(tp: Type): Boolean = tp match
+        case ref: TermRef => ref.symbol.isAllOf(JavaEnumValue)
+        case _ => false
+
+      if sym.isStableMember && isJavaEnumValueRef(tp) then
+        tp  // preserve singleton type for Java enum aliases
+      else if (defaultTp eq pt) && (tp frozen_<:< defaultTp) then
         // See i21558, the default argument new A(1.0) is of type A[?T]
         // With an uninterpolated, invariant ?T type variable.
         // So before we return the default getter parameter type (A[? <: Double])
