@@ -155,7 +155,10 @@ object DesugarEnums {
       else
         def default(ordinal: Tree) =
           CaseDef(Ident(nme.WILDCARD), EmptyTree, throwArg(ordinal))
-        if constraints.isEnumeration then
+        // For inner (non-static) enums, use Match instead of $values lookup to avoid
+        // serialization issues where $values is not yet initialized. See #15396.
+        inline def isStaticEnum = enumClass.exists && enumClass.isStatic
+        if constraints.isEnumeration && isStaticEnum then
           fromOrdinalMeth(ordinal =>
             Try(Apply(valuesDot(nme.apply), ordinal), default(ordinal) :: Nil, EmptyTree))
         else

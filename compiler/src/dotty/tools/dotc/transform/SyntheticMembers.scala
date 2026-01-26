@@ -492,12 +492,19 @@ class SyntheticMembers(thisPhase: DenotTransformer) {
       && !hasReadResolve(clazz)
       && ctx.platform.shouldReceiveJavaSerializationMethods(clazz)
     then
-      List(
-        DefDef(readResolveDef(clazz),
-          _ => ref(clazz.owner.owner.sourceModule)
-                .select(nme.fromOrdinal)
-                .appliedTo(This(clazz).select(nme.ordinal).ensureApplied))
-          .withSpan(ctx.owner.span.focus))
+      val enumCompanion = clazz.owner.owner.sourceModule
+      // Skip readResolve for inner (non-static) enums to avoid serialization issues.
+      // See #15396: during deserialization, fromOrdinal would be called before
+      // the enum companion is fully initialized, causing NoSuchElementException.
+      if enumCompanion.isStatic then
+        List(
+          DefDef(readResolveDef(clazz),
+            _ => ref(enumCompanion)
+                  .select(nme.fromOrdinal)
+                  .appliedTo(This(clazz).select(nme.ordinal).ensureApplied))
+            .withSpan(ctx.owner.span.focus))
+      else
+        Nil
     else
       Nil
 
