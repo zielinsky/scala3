@@ -69,7 +69,11 @@ class SymbolicXMLBuilder(parser: Parser, preserveWS: Boolean)(using Context) {
 
   // convenience methods
   private def LL[A](x: A*): List[List[A]] = List(x.toList)
-  private def const(x: Any) = Literal(Constant(x))
+  private def const(x: Any) =
+    val lit = Literal(Constant(x))
+    if (ctx.explicitNulls && x == null)
+      Select(lit, nme.asInstanceOf_)
+    else lit
   private def wild                          = Ident(nme.WILDCARD)
   private def wildStar                      = Ident(tpnme.WILDCARD_STAR)
   private def _scala(name: Name)            = scalaDot(name)
