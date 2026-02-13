@@ -212,7 +212,7 @@ object projects:
   lazy val requests = MillCommunityProject(
     project = "requests",
     baseCommand = s"requests.jvm[$compilerVersion]",
-    executeTests = false,
+    executeTests = false, // TODO: fix this to pass consistently
   )
 
   lazy val cask = MillCommunityProject(
