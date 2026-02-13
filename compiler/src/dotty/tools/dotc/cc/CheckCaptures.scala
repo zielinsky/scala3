@@ -304,9 +304,6 @@ class CheckCaptures extends Recheck, SymTransformer:
     /** The set of symbols that were rechecked via a completer */
     private val completed = new mutable.HashSet[Symbol]
 
-    /** Set on recheckClassDef since there we see all language imports */
-    private var sepChecksEnabled = false
-
     private var needAnotherRun = false
 
     def resetIteration()(using Context): Unit =
@@ -1436,7 +1433,6 @@ class CheckCaptures extends Recheck, SymTransformer:
      *      same check is already done in the TypeApply.
      */
     override def recheckClassDef(tree: TypeDef, impl: Template, cls: ClassSymbol)(using Context): Type =
-      if Feature.enabled(Feature.separationChecking) then sepChecksEnabled = true
       val localSet = cls.useSet
 
       // (1) Capture set of a class includes the capture sets of its parents
@@ -2309,7 +2305,7 @@ class CheckCaptures extends Recheck, SymTransformer:
 
       checker.traverse(unit)(using ctx.withOwner(defn.RootClass))
       checkEscapingReachUses()
-      if sepChecksEnabled then
+      if Feature.sepChecksEnabled then
         for (tree, cs, env) <- useInfos do
           usedSet(tree) = tree.markedFree ++ cs
         ccState.inSepCheck:
