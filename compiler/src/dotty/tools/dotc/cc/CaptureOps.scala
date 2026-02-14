@@ -16,7 +16,7 @@ import Capabilities.*
 import Mutability.isStatefulType
 import StdNames.{nme, tpnme}
 import config.Feature
-import NameKinds.TryOwnerName
+import NameKinds.{TryOwnerName, DefaultGetterName}
 import typer.ProtoTypes.WildcardSelectionProto
 
 /** Are we at checkCaptures phase? */
@@ -706,6 +706,44 @@ extension (sym: Symbol)
 
   def isDisallowedInCapset(using Context): Boolean =
     sym.isOneOf(if ccConfig.strictMutability then Method else UnstableValueFlags)
+
+  /** Is symbol exempt from checking that its type or uses clause must
+   *  be given explicitly? This is the case for symbols that are not
+   *  visible outside the compilation unit where they are defined,
+   *  and also for two pragmatic exemptions, explained below.
+   */
+  def isExemptFromExplicitChecks(using Context): Boolean =
+    sym.isLocalToCompilationUnit
+    || ctx.owner.enclosingPackageClass.isEmptyPackage
+      // We make an exception for symbols in the empty package.
+      // these could theoretically be accessed from other files in the empty package, but
+      // usually it would be too annoying to require explicit types.
+    || sym.name.is(DefaultGetterName)
+      // Default getters are exempted since otherwise it would be
+      // too annoying. This is a hole since a defualt getter's result type
+      // might leak into a type variable.
+
+  /** If `sym` is a method or a non-static inner class, a capture set
+   *  representing the captured references of the environment associated with `sym`.
+   */
+  def useSet(using Context): CaptureSet =
+    ccState.useSetCache.getOrElseUpdate(sym,
+      sym.getAnnotation(defn.RetainsAnnot) match
+        case Some(ann: RetainingAnnotation) =>
+          try ann.toCaptureSet
+          catch case ex: IllegalCaptureRef =>
+            report.error(em"Illegal capture reference: ${ex.getMessage}", sym.srcPos)
+            CaptureSet.empty
+        case _ =>
+          if sym.is(Package)
+            || (sym.isClass || sym.isConstructor) && !sym.isExemptFromExplicitChecks
+            // If `sym` does not have a `uses` clause (or `uses_init` for constructors)
+            // set its capture set to the empty set, unless it is local to the current
+            // compilation unit. For local classes and constructors we infer their
+            // use set.
+          then CaptureSet.empty
+          else CaptureSet.Var(sym, nestedOK = false)
+    )
 
   def varMirror(using Context): Symbol =
     ccState.varMirrors.getOrElseUpdate(sym,

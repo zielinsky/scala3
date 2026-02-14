@@ -9,7 +9,7 @@ import reporting.Message
 import Contexts.Context
 import Types.MethodType
 import Symbols.Symbol
-import util.SimpleIdentitySet
+import util.{SimpleIdentitySet, EqHashMap}
 import Capabilities.Capability
 
 /** Capture checking state, which is known to other capture checking components */
@@ -59,6 +59,7 @@ class CCState:
 
   def start(): Unit =
     iterCount = 1
+    useSetCache.clear()
 
   private var mySepCheck = false
 
@@ -100,6 +101,11 @@ class CCState:
   private var collapseLocalCaps: Boolean = false
 
   private var discardUses: Boolean = false
+
+  // ------- Use sets ----------------------------------------
+
+  /* A cache for CaptureOps.useSet */
+  private[cc] val useSetCache: util.EqHashMap[Symbol, CaptureSet] = EqHashMap()
 
 object CCState:
 

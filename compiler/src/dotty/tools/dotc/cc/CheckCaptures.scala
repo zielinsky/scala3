@@ -289,8 +289,6 @@ class CheckCaptures extends Recheck, SymTransformer:
     /** Currently checked closures and their expected types, used for error reporting */
     private var openClosures: List[(Symbol, Type)] = Nil
 
-    private val myCapturedVars: util.EqHashMap[Symbol, CaptureSet] = EqHashMap()
-
     /** A list of actions to perform at postCheck. The reason to defer these actions
      *  is that it is sometimes better for type inference to not constrain too early
      *  with a checkConformsExpr.
@@ -413,7 +411,7 @@ class CheckCaptures extends Recheck, SymTransformer:
         def wrap(why: String) =
           i"\n\nNote that `${elem.showAsCapability}` is a capability $why."
         if cls.isStaticOwner then
-          val uses = capturedVars(cls)
+          val uses = cls.useSet
           if !uses.elems.isEmpty then
             wrap(i"because it uses $uses")
           else
@@ -477,28 +475,6 @@ class CheckCaptures extends Recheck, SymTransformer:
       checkOK(
           TypeComparer.compareResult(cs1.subCaptures(cs2)),
           cs1, cs2, owner, provenance, pos)
-
-    /** If `sym` is a method or a non-static inner class, a capture set variable
-     *  representing the captured variables of the environment associated with `sym`.
-     */
-    def capturedVars(sym: Symbol)(using Context): CaptureSet =
-      myCapturedVars.getOrElseUpdate(sym,
-        sym.getAnnotation(defn.RetainsAnnot) match
-          case Some(ann: RetainingAnnotation) =>
-            try ann.toCaptureSet
-            catch case ex: IllegalCaptureRef =>
-              report.error(em"Illegal capture reference: ${ex.getMessage}", sym.srcPos)
-              CaptureSet.empty
-          case _ =>
-            if sym.is(Package)
-              || (sym.isClass || sym.isConstructor) && !isExemptFromExplicitChecks(sym)
-              // If `sym` does not have a `uses` clause (or `uses_init` for constructors)
-              // set its capture set to the empty set, unless it is local to the current
-              // compilation unit. For local classes and constructors we infer their
-              // use set.
-            then CaptureSet.empty
-            else CaptureSet.Var(sym, nestedOK = false)
-      )
 
 // ---- Record Uses with MarkFree ----------------------------------------------------
 
@@ -656,7 +632,7 @@ class CheckCaptures extends Recheck, SymTransformer:
           case root: ThisType => ctx.owner.isContainedIn(root.cls)
           case _ => true
         if sym.exists && curEnv.kind != EnvKind.Boxed then
-          var locals = capturedVars(sym)
+          var locals = sym.useSet
           if sym.isConstructor then
             locals = mapClassCaptures(sym.owner.asClass, resType, locals)
           markFree(locals.filter(isRetained), tree)
@@ -1177,7 +1153,7 @@ class CheckCaptures extends Recheck, SymTransformer:
      *  block containing the anonymous function and the Closure node.
      */
     override def recheckClosure(tree: Closure, pt: Type, forceDependent: Boolean)(using Context): Type =
-      val cs = capturedVars(tree.meth.symbol)
+      val cs = tree.meth.symbol.useSet
       capt.println(i"typing closure $tree with cvs $cs")
       super.recheckClosure(tree, pt, forceDependent).capturing(cs)
         .showing(i"rechecked closure $tree / $pt = $result", capt)
@@ -1340,7 +1316,7 @@ class CheckCaptures extends Recheck, SymTransformer:
         // Lazy vals need their own environment to track captures from their RHS,
         // similar to how methods work
         if sym.is(Lazy) then
-          val localSet = capturedVars(sym)
+          val localSet = sym.useSet
           if localSet ne CaptureSet.empty then
             curEnv = Env(sym, EnvKind.Regular, localSet, curEnv, nestedClosure = NoSymbol)
         else if runInConstructor then
@@ -1390,7 +1366,7 @@ class CheckCaptures extends Recheck, SymTransformer:
             case _ => NoSymbol
 
         val saved = curEnv
-        val localSet = capturedVars(sym)
+        val localSet = sym.useSet
         if localSet ne CaptureSet.empty then
           curEnv = Env(sym, EnvKind.Regular, localSet, curEnv, nestedClosure(tree.rhs))
 
@@ -1522,7 +1498,7 @@ class CheckCaptures extends Recheck, SymTransformer:
           .toMap
         def restoreEnvFor(sym: Symbol): Env =
           if definesEnv(sym) then
-            val localSet = capturedVars(sym)
+            val localSet = sym.useSet
             if localSet eq CaptureSet.empty then rootEnv
             else envForOwner.get(sym) match
               case Some(e) => e
@@ -1552,11 +1528,11 @@ class CheckCaptures extends Recheck, SymTransformer:
      */
     override def recheckClassDef(tree: TypeDef, impl: Template, cls: ClassSymbol)(using Context): Type =
       if Feature.enabled(Feature.separationChecking) then sepChecksEnabled = true
-      val localSet = capturedVars(cls)
+      val localSet = cls.useSet
 
       // (1) Capture set of a class includes the capture sets of its parents
       for parent <- impl.parents do // (1)
-        checkSubset(capturedVars(parent.tpe.classSymbol), localSet, parent.srcPos,
+        checkSubset(parent.tpe.classSymbol.useSet, localSet, parent.srcPos,
           provenance = i"\nof the references allowed to be captured by $cls")
 
 
@@ -1658,7 +1634,7 @@ class CheckCaptures extends Recheck, SymTransformer:
       if curEnv.owner.isClass then
         val constr = curEnv.owner.primaryConstructor
         if constr.exists then
-          curEnv = Env(constr, EnvKind.Regular, capturedVars(constr), curEnv)
+          curEnv = Env(constr, EnvKind.Regular, constr.useSet, curEnv)
 
     override def recheckStat(stat: Tree)(using Context): Unit =
       val saved = curEnv
@@ -1897,7 +1873,7 @@ class CheckCaptures extends Recheck, SymTransformer:
                     // prefixes at the use site. And this exemption is required since capture sets
                     // of non-local classes are always empty, so we can't add an outer this to them.
                 then
-                  checkElem(outerRef, capturedVars(eref.cls), pos,
+                  checkElem(outerRef, eref.cls.useSet, pos,
                     provenance =
                       i""" of the enclosing class ${eref.cls}.
                          |The reference was included since we tried to establish that $arefs <: $erefs""")
@@ -2140,7 +2116,7 @@ class CheckCaptures extends Recheck, SymTransformer:
                 val actual1 =
                   val saved = curEnv
                   try
-                    curEnv = Env(clazz, EnvKind.NestedInOwner, capturedVars(clazz), outer0 = curEnv)
+                    curEnv = Env(clazz, EnvKind.NestedInOwner, clazz.useSet, outer0 = curEnv)
                     val adapted =
                       adaptBoxed(memberTp, expected1, tree, covariant = true, alwaysConst = true)
                     memberTp match
@@ -2376,7 +2352,7 @@ class CheckCaptures extends Recheck, SymTransformer:
             val pcls = parent.nuType.classSymbol
             val parentIsExclusive =
               if parent.isType then
-                capturedVars(pcls).isExclusive()
+                pcls.useSet.isExclusive()
                 || capturesImpliedByFields(pcls.asClass, parent.nuType).refs.isExclusive()
               else parent.nuType.captureSet.isExclusive()
             if parentIsExclusive then
