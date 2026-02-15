@@ -42,7 +42,7 @@ So, effectively, anything that can be updated must be unaliased.
 
 ## Separation Checking
 
-The idea behind separation checking is simple: We now interpret each occurrence of `cap` as a separate top capability. This includes derived syntaxes like `A^` and `B => C`. We further keep track during capture checking which capabilities are subsumed by each `cap`. If capture checking widens a capability `x` to a top capability `capᵢ`, we say `x` is _hidden_ by `capᵢ`. The rule then is that any capability hidden by a top capability `capᵢ` cannot be referenced independently or hidden in another `capⱼ` in code that can see `capᵢ`.
+The idea behind separation checking is simple: We now interpret each occurrence of `any` as a separate top capability. This includes derived syntaxes like `A^` and `B => C`. We further keep track during capture checking which capabilities are subsumed by each `any`. If capture checking widens a capability `x` to a top capability `anyᵢ`, we say `x` is _hidden_ by `anyᵢ`. The rule then is that any capability hidden by a top capability `anyᵢ` cannot be referenced independently or hidden in another `anyⱼ` in code that can see `anyᵢ`.
 
 Here's an example:
 ```scala
@@ -50,7 +50,7 @@ val x: C^ = y
   ... x ...  // ok
   ... y ...  // error
 ```
-This principle ensures that capabilities such as `x` that have `cap` as underlying capture set are un-aliased or "fresh". Any previously existing aliases such as `y` in the code above are inaccessible as long as `x` is also visible.
+This principle ensures that capabilities such as `x` that have `any` as underlying capture set are un-aliased or "fresh". Any previously existing aliases such as `y` in the code above are inaccessible as long as `x` is also visible.
 
 Separation checking applies only to exclusive capabilities and their read-only versions. Any capability extending `SharedCapability` in its type is exempted; the following definitions and rules do not apply to them.
 
@@ -67,7 +67,7 @@ Separation checks are applied in the following scenarios:
 
 ### Checking Applications
 
-When checking a function application `f(e_1, ..., e_n)`, we instantiate each `cap` in a formal parameter of `f` to a fresh top capability and compare the argument types with these instantiated parameter types. We then check that the hidden set of each instantiated top capability for an argument `eᵢ` is separated from the capture sets of all the other arguments as well as from the capture sets of the function prefix and the function result. For instance a
+When checking a function application `f(e_1, ..., e_n)`, we instantiate each `any` in a formal parameter of `f` to a fresh top capability and compare the argument types with these instantiated parameter types. We then check that the hidden set of each instantiated top capability for an argument `eᵢ` is separated from the capture sets of all the other arguments as well as from the capture sets of the function prefix and the function result. For instance a
 call to
 ```scala
 multiply(a, b, a)
@@ -77,10 +77,10 @@ first parameter.
 
 We do not report a separation error between two sets if a formal parameter's capture set explicitly names a conflicting parameter. For instance, consider a method `seq` to apply two effectful function arguments in sequence. It can be declared as follows:
 ```scala
-def seq(f: () => Unit; g: () ->{cap, f} Unit): Unit =
+def seq(f: () => Unit; g: () ->{any, f} Unit): Unit =
   f(); g()
 ```
-Here, the `g` parameter explicitly mentions `f` in its potential capture set. This means that the `cap` in the same capture set would not need to hide the  first argument, since it already appears explicitly in the same set. Consequently, we can pass the same function twice to `compose` without violating the separation criteria:
+Here, the `g` parameter explicitly mentions `f` in its potential capture set. This means that the `any` in the same capture set would not need to hide the  first argument, since it already appears explicitly in the same set. Consequently, we can pass the same function twice to `compose` without violating the separation criteria:
 ```scala
 val r = Ref(1)
 val plusOne = r.set(r.get + 1)
@@ -108,7 +108,7 @@ val x = a.get // ok
 One can also drop the explicit type of `b` and leave it to be inferred. That would
 not cause a separation error either.
 ```scala
-val a: Ref^ = Ref(0
+val a: Ref^ = Ref(0)
 val b = a
 val x = a.get // ok
 ```
@@ -127,7 +127,7 @@ Here, the definition of `b` is in error since the hidden sets of the two `^`s in
 
 ### Checking Return Types
 
-When a `cap` appears in the return type of a function it means a "fresh" top capability, different from what is known at the call site. Separation checking makes sure this is the case. For instance, the following is OK:
+When an `any` appears in the return type of a method it means a top capability that is different from what is known at the call site. Separation checking makes sure this is the case. For instance, the following is OK:
 ```scala
 def newRef(): Ref^ = Ref(1)
 ```
@@ -142,7 +142,7 @@ But the next definitions would cause a separation error:
 val a = Ref(1)
 def newRef(): Ref^ = a // error
 ```
-The rule is that the hidden set of a fresh cap in a return type cannot reference exclusive or read-only capabilities defined outside of the function. What about parameters? Here's another illegal version:
+The rule is that the hidden set of an `any` in a return type cannot reference exclusive or read-only capabilities defined outside of the function. What about parameters? Here's another illegal version:
 ```scala
 def incr(a: Ref^): Ref^ =
   a.set(a.get + 1)
@@ -154,11 +154,30 @@ val a = Ref(1)
 val b: Ref^ = incr(a)
 ```
 Here, `b` aliases `a` but does not hide it. If we referred to `a` afterwards we would be surprised to see that the reference has now a value of 2.
-Therefore, parameters cannot appear in the hidden sets of fresh result caps either, at least not in general. An exception to this rule is described in the next section.
+Therefore, parameters cannot appear in the hidden sets of result `any`s either, at least not in general. An exception to this rule is described in the next section.
+
+### `fresh` in Function Type Results
+
+While method return types use `any`, function types use `fresh` in their result positions to express that each call yields a result with a distinct capability. As explained in [scoped capabilities](scoped-capabilities.md#expansion-rules-for-function-types), `fresh` in a function result is existentially bound: `() -> Ref^{fresh}` means `() -> ∃fresh. Ref^{fresh}`.
+
+From a separation-checking perspective, `fresh` results are important because they let the checker prove non-aliasing across calls:
+```scala
+val mkRef: () -> Ref^{fresh} = () => Ref(1)
+val a = mkRef()  // Ref^{fresh₁}
+val b = mkRef()  // Ref^{fresh₂}
+```
+Since `fresh₁` and `fresh₂` are distinct existentials, the capture sets of `a` and `b` don't interfere — they are separated. This would not hold if the function type used `any` in its result instead, since both results would share the same capture-set bound and could therefore alias.
+
+The same hidden-set discipline applies: the hidden set of a result `fresh` cannot contain capabilities from outside the function. For instance:
+```scala
+val a = Ref(1)
+val bad: () => Ref^{fresh} = () => a  // error
+```
+Here, `a` is captured by the closure and would need to flow into the result `fresh`. But since `a` is also visible outside the function, this would violate the freshness guarantee — the returned `Ref` would not truly be a new, unaliased capability.
 
 ### Consume Parameters
 
-Returning parameters in fresh result caps is safe if the actual argument to the parameter is not used afterwards. We can signal and enforce this pattern by adding a `consume` modifier to a parameter. With that new soft modifier, the following variant of `incr` is legal:
+Returning parameters in result `any`'s is safe if the actual argument to the parameter is not used afterwards. We can signal and enforce this pattern by adding a `consume` modifier to a parameter. With that new soft modifier, the following variant of `incr` is legal:
 ```scala
 def incr(consume a: Ref^): Ref^ =
   a.set(a.get + 1)
@@ -217,7 +236,7 @@ val c2 = contents(buf1)         // buf.rd can be consumed repeatedly
 ```
 Note that the only difference between `linearAdd` and `contents` is that `linearAdd`'s consume parameter has type `Buffer[T]^` whereas the
 corresponding parameter in `contents` has type `Buffer[T]`. The first type expands
-to `Buffer[T]^{cap}` whereas the second expands to `Buffer[T]^{cap.rd}`.
+to `Buffer[T]^{any}` whereas the second expands to `Buffer[T]^{any.rd}`.
 
 
 ### Consume Methods
@@ -264,7 +283,7 @@ The `freeze` method is defined in `caps` like this:
 ```scala
 def freeze(consume x: Mutable): x.type = x
 ```
-It consumes a value of `Mutable` type with arbitrary capture set (since any capture set conforms to the implied `{cap.rd}`). The actual signature of
+It consumes a value of `Mutable` type with arbitrary capture set (since any capture set conforms to the implied `{any.rd}`). The actual signature of
 `consume` declares that `x.type` is returned, but the actual return type after capture checking is special. Instead of `x.type` it is the underlying `Mutable` type with its top-level capture set
 mapped to `{}`. Applications of `freeze` are safe only if separation checking is enabled.
 
