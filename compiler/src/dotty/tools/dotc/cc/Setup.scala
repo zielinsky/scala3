@@ -40,14 +40,6 @@ trait SetupAPI:
   /** Check to do after the capture checking traversal */
   def postCheck()(using Context): Unit
 
-  /** A map from currently compiled class symbols to those of their fields
-   *  that have an explicit type given. Used in `captureSetImpliedByFields`
-   *  to avoid forcing fields with inferred types prematurely. The test file
-   *  where this matters is i24335.scala. The precise failure scenario which
-   *  this avoids is described in #24335.
-   */
-  def fieldsWithExplicitTypes: collection.Map[ClassSymbol, List[Symbol]]
-
   /** Used for error reporting:
    *  Maps mutable variables to the symbols that capture them (in the
    *  CheckCaptures sense, i.e. symbol is referred to from a different method
@@ -179,7 +171,10 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
         symd.copySymDenotation(info = fluidify(sym.info))
       else if symd.owner.isTerm || symd.is(CaptureChecked) || symd.owner.is(CaptureChecked) then
         val newFlags = newFlagsFor(symd)
-        val newInfo = mappedInfo
+        val newInfo =
+          /*if symd.isPrimaryConstructor && ccConfig.newScheme
+          then refineConstructorResult(mappedInfo, symd.owner.asClass)
+          else*/ mappedInfo
         if sym.isClass then
           sym.thisType.asInstanceOf[ThisType].invalidateCaches()
         if newFlags != symd.flags || (newInfo ne sym.info)
@@ -531,8 +526,6 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
   extension (sym: Symbol) def nextInfo(using Context): Type =
     atPhase(thisPhase.next)(sym.info)
 
-  val fieldsWithExplicitTypes: mutable.HashMap[ClassSymbol, List[Symbol]] = mutable.HashMap()
-
   val capturedBy: mutable.HashMap[Symbol, Symbol] = mutable.HashMap()
 
   val anonFunCallee: mutable.HashMap[Symbol, Symbol] = mutable.HashMap()
@@ -745,7 +738,7 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
       case tree @ TypeDef(_, impl: Template) =>
         val cls: ClassSymbol = tree.symbol.asClass
 
-        fieldsWithExplicitTypes(cls) =
+        ccState.fieldsWithExplicitTypes(cls) =
           for
             case vd @ ValDef(_, tpt: TypeTree, _) <- impl.body
             if !tpt.isInferred && vd.symbol.exists && !vd.symbol.is(NonMember)
