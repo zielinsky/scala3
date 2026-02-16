@@ -532,7 +532,7 @@ extension (ref: TermRef | ThisType)
     case ref: TermRef if ref.isLocalMutable => ref.symbol.varMirror.termRef
     case _ => ref
 
-extension (cls: ClassSymbol)
+extension (cls: ClassSymbol) {
 
   def pureBaseClass(using Context): Option[Symbol] =
     cls.baseClasses.find: bc =>
@@ -647,57 +647,8 @@ extension (cls: ClassSymbol)
           case TypeRef(prefix: ThisType, _) if prefix.cls == cls => locals
           case TypeRef(prefix, _) => locals.map(AsSeenFromMap(prefix, cls.owner))
           case _ => locals
-/*
-  def refineConstructorResult(info: Type)(using Context): Type = info match
-    case info: PolyType =>
-      info.derivedLambdaType(resType = refineConstructorResult(info.resType))
-    case info: MethodType => {
-      val prefs = info.paramRefs
+}
 
-      /** First half of result pair:
-       *  Refine the type of a constructor call `new C(t_1, ..., t_n)`
-       *  to C{val x_1: @refineOverride T_1, ..., x_m: @refineOverride T_m}
-       *  where x_1, ..., x_m are the tracked parameters of C and
-       *  T_1, ..., T_m are the types of the corresponding arguments. The @refineOveride
-       *  annotations avoid problematic intersections of capture sets when those
-       *  parameters are selected.
-       *
-       *  Second half: union of initial capture set, all capture sets of arguments
-       *  to tracked parameters, and the capture set implied by the fields of the class.
-       */
-      def addParamArgRefinements(core: Type, initCs: CaptureSet): (Type, CaptureSet) =
-        var refined: Type = core
-        var allCaptures: CaptureSet = initCs ++ capturesImpliedByFields(cls, core).refs
-        for (getterName, argType) <- info.paramNames.lazyZip(argTypes) do
-          val getter = cls.info.member(getterName).suchThat(_.isRefiningParamAccessor).symbol
-          if !getter.is(Private) && getter.hasTrackedParts then
-            refined = refined.refinedOverride(getterName, argType.unboxed) // Yichen you might want to check this
-            if getter.hasAnnotation(defn.ConsumeAnnot) then
-              () // We make sure in checkClassDef, point (6), that consume parameters don't
-                 // contribute to the class capture set
-            else allCaptures ++= argType.captureSet
-        (refined, allCaptures)
-
-      /** Augment result type of constructor with refinements and captures.
-       *  @param  core   The result type of the constructor
-       *  @param  initCs The initial capture set to add, not yet counting capture sets from arguments
-       */
-      def augmentConstructorType(core: Type, initCs: CaptureSet): Type = core match
-        case core: MethodType =>
-          // more parameters to follow; augment result type
-          core.derivedLambdaType(resType = augmentConstructorType(core.resType, initCs))
-        case CapturingType(parent, refs) =>
-          // can happen for curried constructors if instantiate of a previous step
-          // added capture set to result.
-          augmentConstructorType(parent, initCs ++ refs)
-        case _ =>
-          val (refined, cs) = addParamArgRefinements(core, initCs)
-          refined.capturing(cs)
-
-      augmentConstructorType(info, cls.mapClassCaptures(info.resType, cls.useSet))
-          .showing(i"constr type $info in $cls = $result", capt)
-    }
-*/
 extension (sym: Symbol) {
 
   private def inScalaAnnotation(using Context): Boolean =
@@ -908,6 +859,12 @@ extension (sym: Symbol) {
    */
   def allLocalCapsInTypeAreRO(using Context): Boolean =
     memberCaps.forall(_.isReadOnly)
+
+  /** Does the result type of this method need to be treated with refineConstructorInstance? */
+  def needsResultRefinement(using Context): Boolean =
+    sym.isPrimaryConstructor
+    || Synthetics.isSyntheticCopyMethod(sym)
+    || Synthetics.isSyntheticCompanionMethod(sym, nme.apply)
 }
 
 extension (tp: AnnotatedType) {

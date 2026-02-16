@@ -996,10 +996,14 @@ class SepCheck(checker: CheckCaptures.CheckerAPI) extends tpd.TreeTraverser:
    *  Hidden sets of checked definitions are added to `defsShadow`.
    */
   def checkValOrDefDef(tree: ValOrDefDef)(using Context): Unit =
-    if !tree.symbol.isOneOf(TermParamOrAccessor) && !isUnsafeAssumeSeparate(tree.rhs) then
-      checkType(tree.tpt, tree.symbol)
-      capt.println(i"sep check def ${tree.symbol}: ${tree.tpt} with ${spanCaptures(tree.tpt).transHiddenSet.directFootprint}")
-      pushDef(tree, spanCaptures(tree.tpt).transHiddenSet.deductSymRefs(tree.symbol))
+    val sym = tree.symbol
+    if !sym.isOneOf(TermParamOrAccessor)
+       && !sym.needsResultRefinement
+       && !isUnsafeAssumeSeparate(tree.rhs)
+    then
+      checkType(tree.tpt, sym)
+      capt.println(i"sep check def $sym: ${tree.tpt} with ${spanCaptures(tree.tpt).transHiddenSet.directFootprint}")
+      pushDef(tree, spanCaptures(tree.tpt).transHiddenSet.deductSymRefs(sym))
 
   def inSection[T](op: => T)(using Context): T =
     val savedDefsShadow = defsShadow

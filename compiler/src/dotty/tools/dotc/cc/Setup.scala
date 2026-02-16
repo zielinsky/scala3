@@ -171,10 +171,7 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
         symd.copySymDenotation(info = fluidify(sym.info))
       else if symd.owner.isTerm || symd.is(CaptureChecked) || symd.owner.is(CaptureChecked) then
         val newFlags = newFlagsFor(symd)
-        val newInfo =
-          /*if symd.isPrimaryConstructor && ccConfig.newScheme
-          then refineConstructorResult(mappedInfo, symd.owner.asClass)
-          else*/ mappedInfo
+        val newInfo = mappedInfo
         if sym.isClass then
           sym.thisType.asInstanceOf[ThisType].invalidateCaches()
         if newFlags != symd.flags || (newInfo ne sym.info)

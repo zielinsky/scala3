@@ -200,7 +200,7 @@ object CheckCaptures:
 
   trait CheckerAPI:
     /** Complete symbol info of a val or a def */
-    def completeDef(tree: ValOrDefDef, sym: Symbol, completer: LazyType)(using Context): Type
+    def completeDef(tree: ValOrDefDef, sym: Symbol, completer: LazyType)(using Context): Unit
 
     extension [T <: Tree](tree: T)
 
@@ -950,10 +950,8 @@ class CheckCaptures extends Recheck, SymTransformer:
       val ownType =
         if !mt.isResultDependent then mt.resType
         else SubstParamsMap(mt, argTypes)(mt.resType)
-      if sym.isPrimaryConstructor then refineConstructorInstance(ownType, mt, argTypes, sym)
-      else if sym.isConstructor then
-        println(i"not refining $sym: $ownType")
-        ownType
+      if sym.needsResultRefinement then
+        refineConstructorInstance(ownType, mt, argTypes, ownType.finalResultType.classSymbol.asClass)
       else ownType
 
     /** Refine the type returned from a constructor as follows:
@@ -963,8 +961,7 @@ class CheckCaptures extends Recheck, SymTransformer:
      *  only or by a method in the class. Both captures go into the result type. We
      *  could be more precise by distinguishing the two capture sets.
      */
-    private def refineConstructorInstance(resType: Type, mt: MethodType, argTypes: List[Type], constr: Symbol)(using Context): Type =
-      val cls = constr.owner.asClass
+    private def refineConstructorInstance(resType: Type, mt: MethodType, argTypes: List[Type], cls: ClassSymbol)(using Context): Type =
 
       /** First half of result pair:
        *  Refine the type of a constructor call `new C(t_1, ..., t_n)`
@@ -983,7 +980,11 @@ class CheckCaptures extends Recheck, SymTransformer:
         for (getterName, argType) <- mt.paramNames.lazyZip(argTypes) do
           val getter = cls.info.member(getterName).suchThat(_.isRefiningParamAccessor).symbol
           if !getter.is(Private) && getter.hasTrackedParts then
-            refined = refined.refinedOverride(getterName, argType.unboxed) // Yichen you might want to check this
+            refined = refined.refinedOverride(getterName, argType.unboxed)
+              // We can assume unboxed since the use set contributed by field selection is also the capture set
+              // So unboxing will not add anything to the use sets.
+              // This trick is also the principal reason why we can't make refineConstructorInstance
+              // an operation to work on the declared constructor types. We would miss the necessary unboxed that way.
             if getter.hasAnnotation(defn.ConsumeAnnot) then
               () // We make sure in checkClassDef, point (6), that consume parameters don't
                  // contribute to the class capture set
@@ -1007,7 +1008,7 @@ class CheckCaptures extends Recheck, SymTransformer:
           refined.capturing(cs)
 
       augmentConstructorType(resType, cls.mapClassCaptures(resType, cls.useSet))
-        .showing(i"constr type $mt with $argTypes%, % in $constr = $result", capt)
+        .showing(i"constr type $mt with $argTypes%, % in $cls = $result", capt)
     end refineConstructorInstance
 
     /** Recheck type applications:
@@ -1311,6 +1312,8 @@ class CheckCaptures extends Recheck, SymTransformer:
         // Default getters are exempted since otherwise it would be
         // too annoying. This is a hole since a defualt getter's result type
         // might leak into a type variable.
+      || sym.needsResultRefinement
+        // If we refine the result type anyway, the inferred type does not matter.
 
     /** Two tests for member definitions with inferred types:
      *
@@ -1395,7 +1398,7 @@ class CheckCaptures extends Recheck, SymTransformer:
      *  these checks can appear out of order, we need to first create the correct
      *  environment for checking the definition.
      */
-    def completeDef(tree: ValOrDefDef, sym: Symbol, completer: LazyType)(using Context): Type =
+    def completeDef(tree: ValOrDefDef, sym: Symbol, completer: LazyType)(using Context): Unit =
       val saved = curEnv
       try
         // Setup environment to reflect the new owner.
