@@ -169,7 +169,11 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
         Synthetics.transform(symd, mappedInfo)
       else if isPreCC(sym) then
         symd.copySymDenotation(info = fluidify(sym.info))
-      else if symd.owner.isTerm || symd.is(CaptureChecked) || symd.owner.is(CaptureChecked) then
+      else if symd.owner.isTerm
+        || symd.is(CaptureChecked)
+        || symd.owner.is(CaptureChecked)
+        || symd.is(ModuleVal) && symd.moduleClass.is(CaptureChecked)
+      then
         val newFlags = newFlagsFor(symd)
         val newInfo = mappedInfo
         if sym.isClass then

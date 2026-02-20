@@ -694,6 +694,7 @@ class SepCheck(checker: CheckCaptures.CheckerAPI) extends tpd.TreeTraverser:
             if encl.isProperlyContainedIn(ref.cls)
                 && !encl.is(Synthetic)
                 && !encl.hasAnnotation(defn.ConsumeAnnot)
+                && !encl.isStaticOwner // no restrictions for globals
             then
               report.error(
                 em"""Separation failure: $descr non-local this of class ${ref.cls}.
