@@ -990,7 +990,11 @@ class CheckCaptures extends Recheck, SymTransformer:
        */
       def addParamArgRefinements(core: Type, initCs: CaptureSet): (Type, CaptureSet) =
         var refined: Type = core
-        var allCaptures: CaptureSet = initCs ++ cls.capturesImpliedByFields(core).refs
+        val implied =
+          if cls.derivesFrom(defn.Caps_Capability)
+          then LocalCap(Origin.NewInstance(core, Nil)).singletonCaptureSet
+          else cls.capturesImpliedByFields(core).refs
+        var allCaptures: CaptureSet = initCs ++ implied
         for (getterName, argType) <- mt.paramNames.lazyZip(argTypes) do
           val getter = cls.refiningGetterNamed(getterName)
           if !getter.is(Private) && getter.hasTrackedParts then
