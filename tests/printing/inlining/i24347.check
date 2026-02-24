@@ -20,8 +20,7 @@ package <empty> {
       {
         val b: Box = new Box(42)
         {
-          val $scrutinee1: (b : Box) = b
-          val b: Box = $scrutinee1
+          val b: Box = b
           b.value:Int
         }:Int
       }
