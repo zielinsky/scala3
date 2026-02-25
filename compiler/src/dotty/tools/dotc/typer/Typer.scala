@@ -1440,8 +1440,12 @@ class Typer(@constructorOnly nestingLevel: Int = 0) extends Namer
         def lhs1 = adapt(lhsCore, LhsProto, locked)
 
         def reassignmentToVal =
-          report.error(ReassignmentToVal(lhsCore.symbol.name, pt), tree.srcPos)
-          cpy.Assign(tree)(lhsCore, typed(tree.rhs, lhs1.tpe.widen)).withType(defn.UnitType)
+          val adapted = lhs1
+          val name = lhs match
+            case nt: NameTree => nt.name  // respects import rename
+            case _ => adapted.symbol.name // other LHS such as X.x += y
+          report.error(ReassignmentToVal(name, pt), tree.srcPos)
+          cpy.Assign(tree)(lhsCore, typed(tree.rhs, adapted.tpe.widen)).withType(defn.UnitType)
 
         def canAssign(sym: Symbol) =
           sym.isMutableVar ||
@@ -1529,7 +1533,7 @@ class Typer(@constructorOnly nestingLevel: Int = 0) extends Namer
               typedDynamicAssign(tree, pt)
             case tpe =>
               reassignmentToVal
-        }
+          }
     }
 
   def typedBlockStats(stats: List[untpd.Tree])(using Context): (List[tpd.Tree], Context) =
