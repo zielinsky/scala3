@@ -81,7 +81,7 @@ object SafeRefs {
       "newInstance", "cast", "toGenericString"))
     rejectSafe("scala.Console")
     rejectSafe("scala.unchecked")
-    rejectSafe("scala.annoation.unchecked.uncheckedOverride")
+    rejectSafe("scala.annotation.unchecked.uncheckedOverride")
     rejectSafe("scala.annotation.unchecked.uncheckedStable")
     rejectSafe("scala.annotation.unchecked.uncheckedVariance")
     rejectSafe("scala.annotation.unchecked.uncheckedCaptures")
