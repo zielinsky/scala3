@@ -19,7 +19,6 @@ import scala.collection.mutable
 import scala.compiletime.uninitialized
 import scala.io.Codec
 import scala.jdk.CollectionConverters.*
-import scala.language.unsafeNulls
 
 class TestReporter protected (outWriter: PrintWriter, logLevel: Int)
 extends Reporter with UniqueMessagePositions with HideNonSensicalMessages with MessageRendering {
