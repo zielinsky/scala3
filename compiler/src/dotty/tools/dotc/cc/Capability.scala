@@ -1236,7 +1236,7 @@ object Capabilities:
 
     override def mapCapability(c: Capability, deep: Boolean) = c match
       case c: LocalCap =>
-        if variance > 0 then
+        if variance >= 0 then
           if sym.isAnonymousFunction && c.classifier.derivesFrom(defn.Caps_Unscoped) then
             c
           else if sym.exists && !c.ccOwner.isContainedIn(sym) then
@@ -1245,9 +1245,6 @@ object Capabilities:
           else
             ResultCap(mt).setOrigin(c)
         else
-          if variance == 0 then
-            fail(em"""$localResType captures the root capability `any` in invariant position.
-                     |This capability cannot be converted to a fresh capability in the result type of a function.""")
           // we accept variance < 0, and leave the `any` as it is          c
           c
       case GlobalFresh if variance > 0 =>
