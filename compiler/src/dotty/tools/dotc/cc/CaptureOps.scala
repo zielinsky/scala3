@@ -867,13 +867,13 @@ extension (sym: Symbol) {
     || Synthetics.isSyntheticCopyMethod(sym)
     || Synthetics.isSyntheticCompanionMethod(sym, nme.apply)
 
-  def widenOwner(using Context): Symbol =
+  def widenOwner(skipModules: Boolean)(using Context): Symbol =
     if sym.is(Package) then defn.RootClass
     else if !sym.exists
-        || sym.isClass && !sym.is(Module)
+        || sym.isClass && !(skipModules && sym.is(Module))
         || sym.is(Method, butNot = Flags.Accessor)
     then sym
-    else sym.owner.widenOwner
+    else sym.owner.widenOwner(skipModules)
 }
 
 extension (tp: AnnotatedType) {

@@ -583,9 +583,9 @@ class SepCheck(checker: CheckCaptures.CheckerAPI) extends tpd.TreeTraverser:
         def escapes(ref: Capability): Boolean = ref.pathRoot match
           case ref @ LocalCap(NoPrefix)
           if ref.classifier.derivesFrom(defn.Caps_Unscoped) =>
-            // we have an escaping reference if the LocalCap's adjustded owner
+            // we have an escaping reference if the LocalCap's adjusted owner
             // is properly contained inside the scope of the variable.
-            ref.adjustOwner(ref.ccOwner).isProperlyContainedIn(lhsOwner)
+            ref.ccOwner.widenOwner(skipModules = false).isProperlyContainedIn(lhsOwner)
           case _ =>
             ref.visibility.isProperlyContainedIn(lhsOwner) // ref itself is not levelOK
             && !ref.isTerminalCapability                   // ... and ...
