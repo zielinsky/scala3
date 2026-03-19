@@ -165,8 +165,10 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
             declaredParents = cinfo.declaredParents :+ defn.Caps_Mutable.typeRef)
         else
           val symCtx = if sym.isOneOf(TermParamOrAccessor) then ctx else ctx.withOwner(sym)
-          //toResultInReturnType(sym, msg => throw TypeError(msg)):
-          transformExplicitType(symd.info, sym)(using symCtx)
+          val info1 = transformExplicitType(symd.info, sym)(using symCtx)
+          if sym.is(Method, butNot = Synthetic)
+          then toResultInReturnType(sym, msg => throw TypeError(msg))(info1)
+          else info1
       if Synthetics.needsTransform(symd) then
         Synthetics.transform(symd, mappedInfo)
       else if isPreCC(sym) then
