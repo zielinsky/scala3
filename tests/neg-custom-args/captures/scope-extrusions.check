@@ -10,26 +10,19 @@
    |        where:    any is a root capability classified as SharedCapability in the type of variable v
    |
    | longer explanation available when compiling with `-explain`
--- [E007] Type Mismatch Error: tests/neg-custom-args/captures/scope-extrusions.scala:11:8 ------------------------------
+-- [E223] CaptureChecking Error: tests/neg-custom-args/captures/scope-extrusions.scala:11:8 ----------------------------
 11 |    w = g  // error
    |        ^
-   |        Found:    () ->{x} Unit
-   |        Required: () ->{any} Unit
-   |
-   |        Note that capability `x` cannot flow into capture set {any}
-   |        because (x : IO) in method f1 is not visible from any in variable w.
-   |
-   |        where:    any is a root capability in the type of variable w
-   |
-   | longer explanation available when compiling with `-explain`
+   |        Reference `x` is not included in the allowed capture set 's1
+   |        of an enclosing function literal with expected type () => Unit.
 -- [E007] Type Mismatch Error: tests/neg-custom-args/captures/scope-extrusions.scala:20:11 -----------------------------
 20 |  withFile(io => io)         // error
    |           ^^^^^^^^
-   |Capability `io` outlives its scope: it leaks into outer capture set 's1 which is owned by method test.
+   |Capability `io` outlives its scope: it leaks into outer capture set 's2 which is owned by method test.
    |The leakage occurred when trying to match the following types:
    |
-   |Found:    (io: IO^) ->'s2 IO^{io}
-   |Required: IO^ => IO^'s1
+   |Found:    (io: IO^) ->'s3 IO^{io}
+   |Required: IO^ => IO^'s2
    |
    |where:    => refers to a root capability created in method test when checking argument to parameter op of method withFile
    |          ^  refers to the root capability caps.any
@@ -38,11 +31,11 @@
 -- [E007] Type Mismatch Error: tests/neg-custom-args/captures/scope-extrusions.scala:21:11 -----------------------------
 21 |  withFile(id)               // error
    |           ^^
-   |Capability `x` outlives its scope: it leaks into outer capture set 's3 which is owned by method test.
+   |Capability `x` outlives its scope: it leaks into outer capture set 's4 which is owned by method test.
    |The leakage occurred when trying to match the following types:
    |
-   |Found:    (x: IO^) ->'s4 IO^{x}
-   |Required: IO^ => IO^'s3
+   |Found:    (x: IO^) ->'s5 IO^{x}
+   |Required: IO^ => IO^'s4
    |
    |where:    => refers to a root capability created in method test when checking argument to parameter op of method withFile
    |          ^  refers to the root capability caps.any
@@ -51,11 +44,11 @@
 -- [E007] Type Mismatch Error: tests/neg-custom-args/captures/scope-extrusions.scala:22:11 -----------------------------
 22 |  withFile(x => id(x))       // error
    |           ^^^^^^^^^^
-   |Capability `x` outlives its scope: it leaks into outer capture set 's5 which is owned by method test.
+   |Capability `x` outlives its scope: it leaks into outer capture set 's6 which is owned by method test.
    |The leakage occurred when trying to match the following types:
    |
-   |Found:    (x: IO^) ->'s6 IO^{x}
-   |Required: IO^ => IO^'s5
+   |Found:    (x: IO^) ->'s7 IO^{x}
+   |Required: IO^ => IO^'s6
    |
    |where:    => refers to a root capability created in method test when checking argument to parameter op of method withFile
    |          ^  refers to the root capability caps.any
@@ -64,41 +57,41 @@
 -- [E007] Type Mismatch Error: tests/neg-custom-args/captures/scope-extrusions.scala:23:11 -----------------------------
 23 |  withFile(id2)              // error, note mentions any since we never have a more specific include failure
    |           ^^^
-   |Capability `fresh` outlives its scope: it leaks into outer capture set 's7 which is owned by method test.
+   |Capability `fresh` outlives its scope: it leaks into outer capture set 's8 which is owned by method test.
    |The leakage occurred when trying to match the following types:
    |
-   |Found:    (x: IO^) ->'s8 IO^{fresh²}
-   |Required: IO^ => IO^'s7
+   |Found:    (x: IO^) ->'s9 IO^{fresh²}
+   |Required: IO^ => IO^'s8
    |
    |where:    =>     refers to a root capability created in method test when checking argument to parameter op of method withFile
    |          ^      refers to the root capability caps.any
-   |          fresh  is a root capability associated with the result type of (x: IO^): IO^'s7
+   |          fresh  is a root capability associated with the result type of (x: IO^): IO^'s8
    |          fresh² is a root capability associated with the result type of (x: IO^): IO^{fresh²}
    |
    | longer explanation available when compiling with `-explain`
 -- [E007] Type Mismatch Error: tests/neg-custom-args/captures/scope-extrusions.scala:24:11 -----------------------------
 24 |  withFile(x => id2(x))      // error, note mentions any since we never have a more specific include failure
    |           ^^^^^^^^^^^
-   |Capability `fresh` outlives its scope: it leaks into outer capture set 's9 which is owned by method test.
+   |Capability `fresh` outlives its scope: it leaks into outer capture set 's10 which is owned by method test.
    |The leakage occurred when trying to match the following types:
    |
-   |Found:    (x: IO^) ->'s10 IO^{fresh²}
-   |Required: IO^ => IO^'s9
+   |Found:    (x: IO^) ->'s11 IO^{fresh²}
+   |Required: IO^ => IO^'s10
    |
    |where:    =>     refers to a root capability created in method test when checking argument to parameter op of method withFile
    |          ^      refers to the root capability caps.any
-   |          fresh  is a root capability associated with the result type of (x: IO^): IO^'s9
+   |          fresh  is a root capability associated with the result type of (x: IO^): IO^'s10
    |          fresh² is a root capability associated with the result type of (x: IO^): IO^{fresh²}
    |
    | longer explanation available when compiling with `-explain`
 -- [E007] Type Mismatch Error: tests/neg-custom-args/captures/scope-extrusions.scala:25:11 -----------------------------
 25 |  withFile(identity)         // error, note mentions any since we never have a more specific include failure
    |           ^^^^^^^^
-   |Capability `x` outlives its scope: it leaks into outer capture set 's11 which is owned by method test.
+   |Capability `x` outlives its scope: it leaks into outer capture set 's12 which is owned by method test.
    |The leakage occurred when trying to match the following types:
    |
-   |Found:    (x: IO^) ->'s12 IO^{x}
-   |Required: IO^ => IO^'s11
+   |Found:    (x: IO^) ->'s13 IO^{x}
+   |Required: IO^ => IO^'s12
    |
    |where:    => refers to a root capability created in method test when checking argument to parameter op of method withFile
    |          ^  refers to the root capability caps.any
@@ -107,11 +100,11 @@
 -- [E007] Type Mismatch Error: tests/neg-custom-args/captures/scope-extrusions.scala:26:11 -----------------------------
 26 |  withFile(x => identity(x)) // error, note mentions any since we never have a more specific include failure
    |           ^^^^^^^^^^^^^^^^
-   |Capability `x` outlives its scope: it leaks into outer capture set 's13 which is owned by method test.
+   |Capability `x` outlives its scope: it leaks into outer capture set 's14 which is owned by method test.
    |The leakage occurred when trying to match the following types:
    |
-   |Found:    (x: IO^) ->'s14 IO^{x}
-   |Required: IO^ => IO^'s13
+   |Found:    (x: IO^) ->'s15 IO^{x}
+   |Required: IO^ => IO^'s14
    |
    |where:    => refers to a root capability created in method test when checking argument to parameter op of method withFile
    |          ^  refers to the root capability caps.any
@@ -120,11 +113,11 @@
 -- [E007] Type Mismatch Error: tests/neg-custom-args/captures/scope-extrusions.scala:28:12 -----------------------------
 28 |  withFile: io =>     // error
    |            ^
-   |Capability `io` outlives its scope: it leaks into outer capture set 's15 which is owned by method test.
+   |Capability `io` outlives its scope: it leaks into outer capture set 's16 which is owned by method test.
    |The leakage occurred when trying to match the following types:
    |
-   |Found:    (io: IO^) ->'s16 () ->{io} Unit
-   |Required: IO^ => () ->'s15 Unit
+   |Found:    (io: IO^) ->'s17 () ->{io} Unit
+   |Required: IO^ => () ->'s16 Unit
    |
    |where:    => refers to a root capability created in method test when checking argument to parameter op of method withFile
    |          ^  refers to the root capability caps.any

@@ -1191,6 +1191,48 @@ class CheckCaptures extends Recheck, SymTransformer:
         openClosures = openClosures.tail
     end recheckClosureBlock
 
+    /** A capture set that records the actual uses of an anonymous function while also
+     *  constraining them to the captures permitted by its expected type.
+     */
+    private class ConstrainedUseSet(
+      override val owner: Symbol,
+      source: CaptureSet,
+      expected: CaptureSet)(using Context)
+    extends CaptureSet.Intersection(source, expected)
+
+    private def canConstrainClosureBody(refs: CaptureSet, parent: Type)(using Context): Boolean =
+      refs.isConst
+      && refs != CaptureSet.Fluid
+      && !refs.isProvisionallySolved
+
+    /** If `tp` is an expected closure type whose capture set is precise enough to use
+     *  during eager rechecking of a closure body, return that capture set.
+     *
+     *  We reject imprecise expected captures, notably `Fluid` and provisional sets.
+     *  We also reject by-name wrappers: their captures describe evaluating the
+     *  by-name argument, whereas a closure value produced by that evaluation is
+     *  checked separately against the by-name result type.
+     */
+    private def expectedCapturesOfClosureType(tp: Type)(using Context): Option[CaptureSet] =
+      tp.dealias match
+        case CapturingType(parent, refs) if canConstrainClosureBody(refs, parent) =>
+          parent.dealias match
+            case defn.ByNameFunction(_) =>
+              None
+            case FunctionOrMethod(_, _) | SAMType(_, _) =>
+              Some(refs)
+            case _ =>
+              None
+        case _ =>
+          None
+
+    /** The top-level expected captures, if they can constrain eager rechecking
+     *  of this closure's body.
+     */
+    private def expectedClosureCaptures(sym: Symbol)(using Context): Option[CaptureSet] =
+      openClosures.find(_._1 == sym).flatMap: (_, pt) =>
+        expectedCapturesOfClosureType(pt)
+
     /** Add var mirrors to the list of block-local symbols to avoid */
     override def avoidLocals(tp: Type, symsToAvoid: => List[Symbol])(using Context): Type =
       val locals = symsToAvoid
@@ -1299,8 +1341,13 @@ class CheckCaptures extends Recheck, SymTransformer:
 
         val saved = curEnv
         val localSet = sym.useSet
-        if localSet ne CaptureSet.empty then
-          curEnv = Env(sym, EnvKind.Regular, localSet, curEnv, nestedClosure(tree.rhs))
+        val bodySet =
+            if sym.isAnonymousFunction && !localSet.isConst then
+              expectedClosureCaptures(sym).fold(localSet)(ConstrainedUseSet(sym, localSet, _))
+            else
+              localSet
+        if bodySet ne CaptureSet.empty then
+          curEnv = Env(sym, EnvKind.Regular, bodySet, curEnv, nestedClosure(tree.rhs))
 
         // ctx with AssumedContains entries for each Contains parameter
         val bodyCtx =
