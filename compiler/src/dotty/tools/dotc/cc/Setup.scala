@@ -20,7 +20,8 @@ import collection.mutable
 import CCState.*
 import CheckCaptures.CheckerAPI
 import NamerOps.methodType
-import NameKinds.{CanThrowEvidenceName, TryOwnerName}
+import NameOps.isSelectorName
+import NameKinds.{CanThrowEvidenceName, TryOwnerName, DefaultGetterName}
 import Capabilities.*
 
 /** Operations accessed from CheckCaptures */
@@ -165,10 +166,8 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
             declaredParents = cinfo.declaredParents :+ defn.Caps_Mutable.typeRef)
         else
           val symCtx = if sym.isOneOf(TermParamOrAccessor) then ctx else ctx.withOwner(sym)
-          val info1 = transformExplicitType(symd.info, sym)(using symCtx)
-          if sym.is(Method, butNot = Synthetic)
-          then toResultInReturnType(sym, msg => throw TypeError(msg))(info1)
-          else info1
+          toResultInReturnType(sym, msg => throw TypeError(msg)):
+            transformExplicitType(symd.info, sym)(using symCtx)
       if Synthetics.needsTransform(symd) then
         Synthetics.transform(symd, mappedInfo)
       else if isPreCC(sym) then
@@ -192,16 +191,23 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
   /** Apply toResult to the return types of def methods, so that local `any` capabilties
    *  are mapped to `fresh` in the return type of the resulting methodic types.
    */
-  def toResultInReturnType(sym: Symbol, fail: Message => Unit)(tp: Type)(using Context): Type = tp match
-    case tp: ExprType if sym.is(Method, butNot = Accessor) =>
-      // Map the result of parameterless `def` methods.
-      tp.derivedExprType(toResult(tp.resType, tp, sym, fail))
-    case tp: MethodOrPoly =>
-      tp.derivedLambdaType(resType =
-        if tp.marksExistentialScope
-        then toResult(tp.resType, tp, sym, fail)
-        else toResultInReturnType(sym, fail)(tp.resType))
-    case _ => tp
+  def toResultInReturnType(sym: Symbol, fail: Message => Unit)(tp: Type)(using Context): Type =
+    val needsConversion =
+      sym.is(Method, butNot = Accessor)
+      && !sym.name.is(DefaultGetterName)
+      && !sym.name.isSelectorName
+    if needsConversion then
+      tp match
+      case tp: ExprType =>
+        // Map the result of parameterless `def` methods.
+        tp.derivedExprType(toResult(tp.resType, tp, sym, fail))
+      case tp: MethodOrPoly =>
+        tp.derivedLambdaType(resType =
+          if tp.marksExistentialScope
+          then toResult(tp.resType, tp, sym, fail)
+          else toResultInReturnType(sym, fail)(tp.resType))
+      case _ => tp
+    else tp
 
   private trait SetupTypeMap extends FollowAliasesMap:
     private var isTopLevel = true
@@ -715,9 +721,8 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
             if signatureChanges then
               val paramSymss = sym.paramSymss
               def newInfo(using Context) = // will be run in this or next phase
-                def fail(msg: Message) = report.error(msg, tree.srcPos)
                 if sym.is(Method) then
-                  toResultInReturnType(sym, fail):
+                  toResultInReturnType(sym, report.error(_, tree.srcPos)):
                     inContext(ctx.withOwner(sym)):
                       paramsToCap(paramSymss, methodType(paramSymss, localReturnType))
                 else tree.tpt.nuType
