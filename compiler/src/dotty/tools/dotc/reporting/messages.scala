@@ -3825,6 +3825,7 @@ final class CannotBeIncluded(
         || realTarget.description.nonEmpty
         || target.description.isEmpty && provenance.isEmpty
       then realTarget
+      else if realTarget.isConst && !target.isConst then target.asVar.withElems(realTarget.elems)
       else target
     val provenanceStr: String =
       if shownTarget.description.isEmpty then provenance else ""
