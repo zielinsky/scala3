@@ -1,10 +1,10 @@
 trait Foo:
   consume def sink1: Unit = ()
 
-trait Bar extends Foo, caps.Stateful:
+trait Bar extends Foo, caps.Separate:
   consume def sink2: Unit = ()
 
-class C extends caps.Stateful:
+class C extends caps.Separate:
   def sink4(consume x: Foo^) = ()
 
 object Foo:
