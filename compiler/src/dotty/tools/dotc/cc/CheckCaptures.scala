@@ -1200,38 +1200,33 @@ class CheckCaptures extends Recheck, SymTransformer:
       expected: CaptureSet)(using Context)
     extends CaptureSet.Intersection(source, expected)
 
-    private def canConstrainClosureBody(refs: CaptureSet, parent: Type)(using Context): Boolean =
+    private def canConstrainClosureBody(refs: CaptureSet)(using Context): Boolean =
       refs.isConst
       && refs != CaptureSet.Fluid
       && !refs.isProvisionallySolved
 
-    /** If `tp` is an expected closure type whose capture set is precise enough to use
-     *  during eager rechecking of a closure body, return that capture set.
+    /** If `sym` is an anonymous function with an expected capturing type
+     *  that is precise enough to use during eager rechecking of a closure body,
+     *  return an intersection of this capture set and the symbol's use set.
+     *  Otherwise return just the use set.
      *
-     *  We reject imprecise expected captures, notably `Fluid` and provisional sets.
-     *  We also reject by-name wrappers: their captures describe evaluating the
+     *  We ignore imprecise expected captures, notably `Fluid` and provisional sets.
+     *  We also ignore capsets in by-name wrappers: their captures describe evaluating the
      *  by-name argument, whereas a closure value produced by that evaluation is
      *  checked separately against the by-name result type.
      */
-    private def expectedCapturesOfClosureType(tp: Type)(using Context): Option[CaptureSet] =
-      tp.dealias match
-        case CapturingType(parent, refs) if canConstrainClosureBody(refs, parent) =>
+    private def expectedClosureCaptures(sym: Symbol, localSet: CaptureSet.Var)(using Context): CaptureSet =
+      openClosures match
+        case (`sym`, CapturingType(parent, refs)) :: _ if canConstrainClosureBody(refs) =>
           parent.dealias match
             case defn.ByNameFunction(_) =>
-              None
+              localSet
             case FunctionOrMethod(_, _) | SAMType(_, _) =>
-              Some(refs)
+              ConstrainedUseSet(sym, localSet, refs)
             case _ =>
-              None
+              localSet
         case _ =>
-          None
-
-    /** The top-level expected captures, if they can constrain eager rechecking
-     *  of this closure's body.
-     */
-    private def expectedClosureCaptures(sym: Symbol)(using Context): Option[CaptureSet] =
-      openClosures.find(_._1 == sym).flatMap: (_, pt) =>
-        expectedCapturesOfClosureType(pt)
+          localSet
 
     /** Add var mirrors to the list of block-local symbols to avoid */
     override def avoidLocals(tp: Type, symsToAvoid: => List[Symbol])(using Context): Type =
@@ -1342,10 +1337,9 @@ class CheckCaptures extends Recheck, SymTransformer:
         val saved = curEnv
         val localSet = sym.useSet
         val bodySet =
-            if sym.isAnonymousFunction && !localSet.isConst then
-              expectedClosureCaptures(sym).fold(localSet)(ConstrainedUseSet(sym, localSet, _))
-            else
-              localSet
+            if sym.isAnonymousFunction && !localSet.isConst
+            then expectedClosureCaptures(sym, localSet.asVar)
+            else localSet
         if bodySet ne CaptureSet.empty then
           curEnv = Env(sym, EnvKind.Regular, bodySet, curEnv, nestedClosure(tree.rhs))
 
