@@ -6,5 +6,5 @@
 -- [E223] CaptureChecking Error: tests/neg-custom-args/captures/lazyvals3.scala:34:8 -----------------------------------
 34 |        od1(n - 1) // error
    |        ^^^
-   |        References {console, c, ev1, io} are not all included in the allowed capture set {console, io}
+   |        References {console, c, ev1, io} are not all included in the allowed capture set {console, ev1, io}
    |        of an enclosing function literal with expected type Int ->{io, console} Boolean.
