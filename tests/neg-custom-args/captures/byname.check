@@ -25,5 +25,5 @@
 -- [E223] CaptureChecking Error: tests/neg-custom-args/captures/byname.scala:22:12 -------------------------------------
 22 |  h2(() => g())() // error
    |           ^^^
-   |           Reference `cap2` is not included in the allowed capture set 's1
+   |           Reference `cap2` is not included in the allowed capture set {cap1}
    |           of an enclosing function literal with expected type () ->{cap1} I.

@@ -29,5 +29,7 @@
 -- [E223] CaptureChecking Error: tests/neg-custom-args/captures/reference-cc.scala:58:22 -------------------------------
 58 |    try () => xs.map(f).sum  // error TODO improve error message
    |                      ^
-   |                      Reference `canThrow$1` is not included in the allowed capture set 's5
+   |                      Reference `canThrow$1` is not included in the allowed capture set {any}
    |                      of an enclosing function literal with expected type () => Double.
+   |
+   |                      where:    any is a root capability in the result type of method escaped

@@ -12,7 +12,7 @@
 -- [E223] CaptureChecking Error: tests/neg-custom-args/captures/vars-simple.scala:16:8 ---------------------------------
 16 |    a = g  // error
    |        ^
-   |        Reference `cap3` is not included in the allowed capture set 's1
+   |        Reference `cap3` is not included in the allowed capture set {cap1, cap2}
    |        of an enclosing function literal with expected type String ->{cap1, cap2} String.
 -- [E007] Type Mismatch Error: tests/neg-custom-args/captures/vars-simple.scala:17:12 ----------------------------------
 17 |    b = List(g) // error

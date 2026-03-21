@@ -19,7 +19,7 @@
 -- [E223] CaptureChecking Error: tests/neg-custom-args/captures/lazyvals5.scala:36:47 ----------------------------------
 36 |  val v3: (() -> String)^{c.console}   = () => c.memberLazy()   // error (but should this be allowed?)
    |                                               ^
-   |                                    Reference `c` is not included in the allowed capture set 's1
+   |                                    Reference `c` is not included in the allowed capture set {c.console}
    |                                    of an enclosing function literal with expected type () ->{c.console} String.
 -- [E007] Type Mismatch Error: tests/neg-custom-args/captures/lazyvals5.scala:37:41 ------------------------------------
 37 |  val v4:  () -> String                = () => t.memberMethod() // error
@@ -33,15 +33,18 @@
 -- [E223] CaptureChecking Error: tests/neg-custom-args/captures/lazyvals5.scala:40:34 ----------------------------------
 40 |  val v6: () ->{c} String = () => funky // error
    |                                  ^^^^^
-   |                                  References {t, c} are not all included in the allowed capture set 's2
+   |                                  References {t, c} are not all included in the allowed capture set {c}
    |                                  of an enclosing function literal with expected type () ->{c} String.
 -- [E223] CaptureChecking Error: tests/neg-custom-args/captures/lazyvals5.scala:41:36 ----------------------------------
 41 |  val v6_1: () ->{t} String = () => funky // error
    |                                    ^^^^^
-   |                                    References {t, c} are not all included in the allowed capture set 's3
+   |                                    References {t, c} are not all included in the allowed capture set {t}
    |                                    of an enclosing function literal with expected type () ->{t} String.
 -- [E223] CaptureChecking Error: tests/neg-custom-args/captures/lazyvals5.scala:61:61 ----------------------------------
 61 |  val v9: () ->{c2.memberLazy, t2.memberLazy} String = () => funky2 // error (but should this be allowed?)
    |                                                             ^^^^^^
-   |                 References {t2, c2} are not all included in the allowed capture set 's4
-   |                 of an enclosing function literal with expected type () ->{c2.memberLazy, t2.memberLazy} String.
+   |             References {t2, c2} are not all included in the allowed capture set {c2.memberLazy, t2.memberLazy²}
+   |             of an enclosing function literal with expected type () ->{c2.memberLazy, t2.memberLazy} String.
+   |
+   |             where:    memberLazy  is a lazy value in class Clazz2
+   |                       memberLazy² is a lazy value in trait Trait2
