@@ -25,6 +25,7 @@ import CaptureSet.{withCaptureSetsExplained, IncludeFailure, MutAdaptFailure, Va
 import CCState.*
 import StdNames.nme
 import NameKinds.{DefaultGetterName, WildcardParamName, UniqueNameKind}
+import NameOps.isReplWrapperName
 import reporting.*
 import reporting.Message.Note
 import Annotations.Annotation
@@ -1358,6 +1359,12 @@ class CheckCaptures extends Recheck, SymTransformer:
           curEnv = saved
       }
 
+    def isScalaDocSnippet(sym: Symbol)(using Context): Boolean =
+      sym.is(ModuleClass)
+      && (sym.sourceModule.name == nme.Snippet)
+      && sym.owner.is(Package)
+      && sym.owner.name.toString.contains("snippet")
+
     /** Is symbol exempt from checking that its type or uses clause must
      *  be given explicitly? This is the case for symbols that are not
      *  visible outside the compilation unit where they are defined,
@@ -1365,6 +1372,8 @@ class CheckCaptures extends Recheck, SymTransformer:
      */
     def isExemptFromExplicitChecks(sym: Symbol)(using Context): Boolean =
       sym.isLocalToCompilationUnit
+      || isScalaDocSnippet(sym)
+      || sym.name.isReplWrapperName
       || ctx.owner.enclosingPackageClass.isEmptyPackage
         // We make an exception for symbols in the empty package.
         // these could theoretically be accessed from other files in the empty package, but

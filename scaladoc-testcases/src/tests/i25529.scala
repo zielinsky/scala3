@@ -7,7 +7,7 @@ class A extends SharedCapability:
   private var state = 0
   def f(): Unit = state += 1
 
-object ObjA:
+object ObjA extends ExclusiveCapability:
   val a: A^ = A()
 
 object ObjB uses_init ObjA: //expected: object ObjB uses_init ObjA

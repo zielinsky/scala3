@@ -388,7 +388,7 @@ object StdNames {
     val RootClass: N            = "RootClass"
     val Select: N               = "Select"
     val Self: N                 = "Self"
-    val Shape: N                = "Shape"
+    val Snippet: N              = "Snippet"
     val StringContext: N        = "StringContext"
     val This: N                 = "This"
     val ThisType: N             = "ThisType"

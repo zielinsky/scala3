@@ -406,6 +406,8 @@ extension (tp: Type)
 
   def derivesFromCapability(using Context): Boolean =
     derivesFromCapTrait(defn.Caps_Capability) || isArrayUnderStrictMut
+  def derivesFromExclusive(using Context): Boolean =
+    derivesFromCapTrait(defn.Caps_ExclusiveCapability) || isArrayUnderStrictMut
   def derivesFromStateful(using Context): Boolean =
     derivesFromCapTrait(defn.Caps_Stateful) || isArrayUnderStrictMut
   def derivesFromShared(using Context): Boolean =

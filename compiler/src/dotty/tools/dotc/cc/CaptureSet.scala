@@ -685,7 +685,9 @@ object CaptureSet:
       && ccConfig.strictMutability
       && variance >= 0
       && sym.isContainedIn(defn.ScalaPackageClass)
-    if parent.derivesFromStateful && !isArrayFromScalaPackage
+    if parent.derivesFromStateful
+      && parent.derivesFromExclusive
+      && !isArrayFromScalaPackage
     then GlobalAny.readOnly
     else GlobalAny
 
