@@ -4,7 +4,7 @@ class Try[+T]
 case class Ok[T](x: T) extends Try[T]
 case class Fail(ex: Exception) extends Try[Nothing]
 
-trait Matrix extends Separate, Unscoped:
+trait Matrix extends Stateful, Unscoped:
   def get(): Unit
 
 trait Label extends Control:

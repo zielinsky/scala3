@@ -218,8 +218,6 @@ If a class `C` with fields that capture `any` is visible in other compilation un
 it must extend `Capability`. This makes sure we add the proper capture set to `new C`
 under separate compilation without having to scan its fields.
 
-## Captures of
-
 
 ## Captures due to Class Initialization
 

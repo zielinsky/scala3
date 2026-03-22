@@ -95,15 +95,15 @@ trait Stateful
 /** Marker trait for classes that produce fresh capabilities with their values. If a value of a type
  *  extending Separate is created, a fresh `any` is automatically added to the value's capture set.
  */
-@experimental
+@experimental @deprecated
 trait Separate extends Stateful, ExclusiveCapability
 
 /** Marker trait for classes that are not subject to scoping restrictions of captured capabilities. */
 @experimental
-trait Unscoped extends Stateful, ExclusiveCapability, Classifier
+trait Unscoped extends ExclusiveCapability, Classifier
 
 @experimental
-trait Mutable extends Stateful, Separate, Unscoped
+trait Mutable extends Stateful, Unscoped
 
 /** Marker trait for classes with reader methods, typically extended by Mutable classes. */
 @experimental

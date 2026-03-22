@@ -1454,7 +1454,7 @@ class CheckCaptures extends Recheck, SymTransformer:
       tp
     }
 
-    /** Check that capture sets of fields are compatibe with declared extensions of
+    /** Check that capture sets of fields are compatible with declared extensions of
      *  the class. This means:
      *   1. If `cls` extends a Classifier class, check that all any-classifiers in fields
      *      conform to the classifier of the class.
@@ -2370,7 +2370,7 @@ class CheckCaptures extends Recheck, SymTransformer:
             val parentIsExclusive =
               if parent.isType then
                 pcls.useSet.isExclusive()
-                || pcls.asClass.creationCapset(parent.nuType).isExclusive()
+                || pcls.asClass.capturesImpliedByFields(parent.nuType).refs.isExclusive()
               else parent.nuType.captureSet.isExclusive()
             if parentIsExclusive && pcls != defn.Caps_ExclusiveCapability then
               val parentExclusivity =

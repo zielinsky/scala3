@@ -41,7 +41,7 @@ A capability is called
 
 In the `scala.caps` object we define a new trait
 ```scala sc:nocompile
-trait Stateful extends ExclusiveCapability
+trait Stateful
 ```
 It is used as a marker trait for classes that can consult and change the global program state.
 These classes typically contain mutable variables and/or _update methods_.
@@ -147,6 +147,7 @@ a stateful type is defined by the presence of update methods, not by what it ext
 A mutable class such as a reference cell or a mutable array or matrix is clearly a stateful type.
 But it also has two other properties that are explained in the following.
 
+<!--
 ## Separate Classes
 
 Each time one creates a value of a mutable type one gets a separate fresh object that can be updated independently
@@ -192,6 +193,7 @@ class SepIterator[T] extends Stateful, Separate:
 ```
 `SepIterator`'s `map` method returns a fresh iterator of type `SepIterator[U]^`. We lose the knowledge that this iterator captures `this` and `f`. So this second version of iterators might seem less useful than the first. However, we can check aliasing conditions using [separation checking](./separation-checking.md). Separation checking
 would inform us that creating a mapped iterator invalidates any future accesses to the original iterator or the passed function `f`. This is expressed by the `consume` modifiers on the `map` method and it parameter.  The `consume` modifier will be explained in detail in the section on separation checking.
+-->
 
 ## The Unscoped Classifier
 
@@ -207,7 +209,7 @@ def withFile[T](op: (f: File^) => T): T =
 Here, we need to enforce that the return type of `op` cannot possibly capture the
 `File` parameter `f`. This is achieved by preventing `op` from returning new capabilities
 that are not already known outside the call to `withFile`. But this scheme can be too restrictive.
-For instance, we might want to read the file's contents into a `Separate` capability such as
+For instance, we might want to read the file's contents into a `Stateful` capability such as
 a `Ref` cell. That `Ref` cell would not hold on to the file, but it would not be a pure type either,
 since the cell itself is a capability.
 
@@ -215,7 +217,7 @@ We can make this compile by declaring `Ref` cells to be `Unscoped`.
 Capabilities classified as `Unscoped` can escape their environment. For instance, the following
 is permitted:
 ```scala sc:nocompile
-class Ref[T](init: T) extends Separate, Unscoped
+class Ref[T](init: T) extends Stateful, Unscoped
 
 withFile: f =>
   val r: Ref[String]^ = Ref(f.read())
@@ -227,10 +229,11 @@ from a `withFile` does not affect the lifetime of `f`.
 
 ## Mutable Classes
 
-Classes such as ref-cells, arrays, or matrices are stateful, unscoped, and their instances represent fresh capabilities. This common combination is expressed by the `Mutable` trait in the `scala.caps` object.
+Classes such as ref-cells, arrays, or matrices are stateful and unscoped.
+This common combination is expressed by the `Mutable` trait in the `scala.caps` object.
 
 ```scala sc:nocompile
-trait Mutable extends Stateful, Separate, Unscoped
+trait Mutable extends Stateful, Unscoped
 ```
 
 Examples:
@@ -247,9 +250,6 @@ class Arr[T](n: Int) extends Mutable:
   update def update(i: Int, x: T) = elems(i) = x
 ```
 
-An example of a `Stateful` and `Unscoped` capability that is _not_ `Separate` would be a
-facade class that reveals some part of an underlying `Mutable` capability.
-
 ## Arrays
 
 The class `scala.Array` is considered a `Mutable` class if [separation checking](./separation-checking.md) is enabled. In that context, class Array can be considered to be declared roughly as follows:
@@ -261,7 +261,7 @@ class Array[T] extends Mutable:
 ```
 In fact, for technical reasons `Array` cannot extend `Mutable` or any other new traits beyond what is supported by the JVM. But for the purposes of capture and separation checking, it is still a considered a `Mutable` class.
 
-By contrast, none of the mutable collections in the Scala standard library extend currently `Stateful` or `Mutable`. So to experiment with mutable collections, an
+By contrast, none of the mutable collections in the Scala standard library currently extend `Stateful` or `Mutable`. So to experiment with mutable collections, an
 alternative class library has to be used.
 
 ## Read-only Capabilities
@@ -270,7 +270,7 @@ If `x` is an exclusive capability of a type extending `Stateful`, `x.rd` is its 
 
 **Implicitly added capture sets**
 
-A reference to a type extending trait `Stateful` gets an implicit capture set `{any.rd}` provided no explicit capture set is given. This is different from other capability traits which implicitly add `{any}`.
+A reference to a type extending both of the traits `ExclusiveCapability` and `Stateful` gets an implicit capture set `{any.rd}` provided no explicit capture set is given. This is different from other capability traits which implicitly add `{any}`.
 
 For instance, consider:
 ```scala sc:nocompile
@@ -287,7 +287,7 @@ In other words, the explicit `^` indicates where state changes can happen.
 
 An access `p.m` to an update method or class `m` in a stateful type is permitted only if the type `S` of the prefix `p` retains exclusive capabilities. If `S` is pure or its capture set has only shared and read-only capabilities then the access is not permitted.
 
-A _read-only access_ is a reference to a type extending `Stateful` where one of the following conditions hold:
+A _read-only access_ is a reference to a type extending `ExclusiveCapability` and `Stateful` where one of the following conditions hold:
 
  1. The reference is `this` and the access is not from an update method of the class of `this`. For instance:
     ```scala sc:nocompile
