@@ -103,6 +103,8 @@ object SafeRefs {
     def isSafe(sym: Symbol): Boolean =
       if sym.is(Package) then
         defn.assumedSafePackages.contains(sym)
+      else if !sym.exists then
+        false
       else
         sym.hasAnnotation(defn.AssumeSafeAnnot)
         || isSafe(if sym.is(ModuleVal) then sym.moduleClass else sym.owner)
@@ -112,6 +114,7 @@ object SafeRefs {
       case tree: RefTree => (tree.symbol, !tree.symbol.is(Method) && pt.isInstanceOf[SelectionProto])
 
     if Feature.safeEnabled
+        && sym.exists
         && checkNotRejected(sym, tree.srcPos)
         && !checkLater
         && sym.isStatic // if it's not static it is local, a parameter, or comes from another symbol,
