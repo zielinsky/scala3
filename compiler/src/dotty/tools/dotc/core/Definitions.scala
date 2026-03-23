@@ -214,7 +214,6 @@ class Definitions {
   @tu lazy val OpsPackageClass: ClassSymbol = OpsPackageVal.moduleClass.asClass
 
   @tu lazy val ScalaPackageVal: TermSymbol = requiredPackage(nme.scala)
-  @tu lazy val ScalaMathPackageVal: TermSymbol = requiredPackage("scala.math")
   @tu lazy val ScalaPackageClass: ClassSymbol = {
     val cls = ScalaPackageVal.moduleClass.asClass
     cls.info.decls.openForMutations.useSynthesizer(
@@ -224,6 +223,7 @@ class Definitions {
     cls
   }
   @tu lazy val ScalaPackageObject: Symbol = requiredModule("scala.package")
+
   @tu lazy val ScalaRuntimePackageVal: TermSymbol = requiredPackage("scala.runtime")
   @tu lazy val ScalaRuntimePackageClass: ClassSymbol = ScalaRuntimePackageVal.moduleClass.asClass
   @tu lazy val JavaPackageVal: TermSymbol = requiredPackage(nme.java)
@@ -231,7 +231,9 @@ class Definitions {
   @tu lazy val JavaLangPackageVal: TermSymbol = requiredPackage(jnme.JavaLang)
   @tu lazy val JavaLangPackageClass: ClassSymbol = JavaLangPackageVal.moduleClass.asClass
   @tu lazy val ScalaCollectionPackageClas: ClassSymbol = requiredPackage("scala.collection").moduleClass.asClass
-  @tu lazy val ScalaCollectionImmutablePackageClas: ClassSymbol = requiredPackage("scala.collection.immutable").moduleClass.asClass
+  @tu lazy val ScalaCollectionImmutablePackageClass: ClassSymbol = requiredPackage("scala.collection.immutable").moduleClass.asClass
+  @tu lazy val ScalaMathPackageClass: ClassSymbol = requiredPackage("scala.math").moduleClass.asClass
+  @tu lazy val ScalaUtilPackageClass: ClassSymbol = requiredPackage("scala.util").moduleClass.asClass
 
   // fundamental modules
   @tu lazy val SysPackage : Symbol = requiredModule("scala.sys.package")
@@ -1523,6 +1525,10 @@ class Definitions {
    */
   @tu lazy val pureSimpleClasses =
     Set(StringClass, NothingClass, NullClass) ++ ScalaValueClasses()
+
+  @tu lazy val assumedSafePackages: Set[Symbol] =
+    Set(ScalaPackageClass, ScalaCollectionImmutablePackageClass, ScalaRuntimePackageClass,
+        ScalaMathPackageClass)//, ScalaUtilPackageClass)
 
   @tu lazy val capsErasedValueMethods =
     Set(Caps_erasedValue, Caps_unsafeErasedValue)
