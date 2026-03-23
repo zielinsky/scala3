@@ -1528,7 +1528,7 @@ class Definitions {
 
   @tu lazy val assumedSafePackages: Set[Symbol] =
     Set(ScalaPackageClass, ScalaCollectionImmutablePackageClass, ScalaRuntimePackageClass,
-        ScalaMathPackageClass)//, ScalaUtilPackageClass)
+        ScalaMathPackageClass, ScalaUtilPackageClass)
 
   @tu lazy val capsErasedValueMethods =
     Set(Caps_erasedValue, Caps_unsafeErasedValue)
