@@ -67,6 +67,7 @@ object SafeRefs {
     assumeSafe("java.lang.String")
     assumeSafe("java.lang.Throwable")
     assumeSafe("java.lang.Void")
+    assumeSafe("scala.runtime.coverage.Invoker")
     assumeSafe("java.lang.Class", except = List(
       "accessFlags", "asSubclass", "cast", "describeConstable",
       "descriptorString", "desiredAssertionStatus", "forName", "forPrimitiveName", "getAnnotatedInterfaces",
@@ -86,14 +87,8 @@ object SafeRefs {
     rejectSafe("scala.annotation.unchecked.uncheckedVariance")
     rejectSafe("scala.annotation.unchecked.uncheckedCaptures")
 
-  def isAssumedSafe(sym: Symbol)(using Context): Boolean =
-    sym.hasAnnotation(defn.AssumeSafeAnnot)
-    || sym.topLevelClass.maybeOwner == defn.ScalaPackageClass
-    || sym.isContainedIn(defn.ScalaCollectionImmutablePackageClas)
-    || sym.isContainedIn(defn.ScalaRuntimePackageClass)
-
   private def fail(sym: Symbol, reason: String, pos: SrcPos)(using Context) =
-    report.error(em"Cannot refer to ${sym.sanitizedDescription} from safe code since $reason", pos)
+    report.error(em"Cannot refer to ${sym.sanitizedDescription}${sym.showExtendedLocation} from safe code since $reason", pos)
     false
 
   private def checkNotRejected(sym: Symbol, pos: SrcPos)(using Context): Boolean =
@@ -107,16 +102,28 @@ object SafeRefs {
   def checkSafe(tree: Tree, pt: Type)(using Context): Unit = {
 
     def isSafe(sym: Symbol): Boolean =
-      !sym.is(Package)
-      && (
-        isAssumedSafe(sym)
-        || isSafe(if sym.is(ModuleVal) then sym.moduleClass else sym.owner))
+      if sym.is(Package) then
+        defn.assumedSafePackages.contains(sym)
+      else if !sym.exists then
+        false
+      else
+        sym.hasAnnotation(defn.AssumeSafeAnnot)
+        || isSafe(if sym.is(ModuleVal) then sym.moduleClass else sym.owner)
 
     val (sym, checkLater) = tree match
-      case tree: New => (tree.tpt.symbol, false)
-      case tree: RefTree => (tree.symbol, !tree.symbol.is(Method) && pt.isInstanceOf[SelectionProto])
+      case tree: New =>
+        (tree.tpt.symbol, false)
+      case tree: RefTree =>
+        val checkLater =
+          !tree.symbol.is(Method)
+          && pt.match
+            case pt: PathSelectionProto => pt.selector.isStatic
+            case _: SelectionProto => true
+            case _ => false
+        (tree.symbol, checkLater)
 
     if Feature.safeEnabled
+        && sym.exists
         && checkNotRejected(sym, tree.srcPos)
         && !checkLater
         && sym.isStatic // if it's not static it is local, a parameter, or comes from another symbol,
