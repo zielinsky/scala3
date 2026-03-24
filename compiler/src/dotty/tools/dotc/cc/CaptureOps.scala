@@ -406,6 +406,8 @@ extension (tp: Type)
 
   def derivesFromCapability(using Context): Boolean =
     derivesFromCapTrait(defn.Caps_Capability) || isArrayUnderStrictMut
+  def derivesFromExclusive(using Context): Boolean =
+    derivesFromCapTrait(defn.Caps_ExclusiveCapability) || isArrayUnderStrictMut
   def derivesFromStateful(using Context): Boolean =
     derivesFromCapTrait(defn.Caps_Stateful) || isArrayUnderStrictMut
   def derivesFromShared(using Context): Boolean =
@@ -565,13 +567,6 @@ extension (cls: ClassSymbol) {
         .foldLeft(defn.AnyClass)(leastClassifier)
     else defn.AnyClass
 
-  def isSeparate(using Context): Boolean =
-    cls.derivesFrom(defn.Caps_Separate)
-    || cls.typeRef.isStatefulType
-    || cls.paramGetters.exists: getter =>
-          !getter.is(Private) // Setup makes sure that getters with capture sets are not private
-          && getter.hasAnnotation(defn.ConsumeAnnot)
-
   /** The additional capture set implied by the capture sets of its fields. This
    *  is either empty or, if some fields have a terminal capability in their span
    *  capture sets, it consists of a single LocalCap that subsumes all these terminal
@@ -611,7 +606,7 @@ extension (cls: ClassSymbol) {
       case _ => Nil
 
     def maybeRO(ref: Capability, fields: List[Symbol]) =
-      if !cls.isSeparate && fields.forall(allLocalCapsInTypeAreRO)
+      if !cls.typeRef.isStatefulType && fields.forall(allLocalCapsInTypeAreRO)
       then ref.readOnly
       else ref
 
@@ -619,7 +614,7 @@ extension (cls: ClassSymbol) {
       LocalCap(Origin.NewInstance(core, fields))
 
     var implied = impliedClassifiers(cls)
-    if cls.isSeparate then implied = dominators(cls.classifier :: Nil, implied)
+    if cls.typeRef.isStatefulType then implied = dominators(cls.classifier :: Nil, implied)
     val fields = contributingFields(cls)
     val impliedSet = ccState.localCapClassifiersAndFieldsCache.getOrElseUpdate(cls, (implied, fields)) match
       case (Nil, _) =>
@@ -632,6 +627,11 @@ extension (cls: ClassSymbol) {
         maybeRO(localCap(fields), fields).singletonCaptureSet
     (impliedSet, fields)
   }
+
+  def creationCapset(using Context)(core: Type = cls.appliedRef): CaptureSet =
+    if cls.derivesFrom(defn.Caps_Capability)
+    then LocalCap(Origin.NewInstance(core, Nil)).singletonCaptureSet
+    else cls.capturesImpliedByFields(core).refs
 
   /** Map locals set with an as-seen-from relative to the prefix path of the created class
    *  reference `core` if that prefix is non-trivial.

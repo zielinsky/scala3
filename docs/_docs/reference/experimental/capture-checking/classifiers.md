@@ -46,8 +46,7 @@ trait SharedCapability extends Capability Classifier
 trait Control extends SharedCapability, Classifier
 
 trait ExclusiveCapability extends Capability
-trait Stateful extends ExclusiveCapability
-trait Unscoped extends Stateful, Classifier
+trait Unscoped extends ExclusiveClassifier, Classifier
 ```
 Here is a graph showing the hierarchy of predefined capability traits. Classifier traits are underlined.
 ```
@@ -58,8 +57,6 @@ Here is a graph showing the hierarchy of predefined capability traits. Classifie
            /              \
  SharedCapability     ExclusiveCapability
  ----------------            |
-        |                    |
-        |                 Stateful
         |                    |
         |                    |
      Control              Unscoped
