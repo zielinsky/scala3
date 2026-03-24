@@ -67,6 +67,7 @@ object SafeRefs {
     assumeSafe("java.lang.String")
     assumeSafe("java.lang.Throwable")
     assumeSafe("java.lang.Void")
+    assumeSafe("scala.runtime.coverage.Invoker")
     assumeSafe("java.lang.Class", except = List(
       "accessFlags", "asSubclass", "cast", "describeConstable",
       "descriptorString", "desiredAssertionStatus", "forName", "forPrimitiveName", "getAnnotatedInterfaces",
@@ -110,8 +111,16 @@ object SafeRefs {
         || isSafe(if sym.is(ModuleVal) then sym.moduleClass else sym.owner)
 
     val (sym, checkLater) = tree match
-      case tree: New => (tree.tpt.symbol, false)
-      case tree: RefTree => (tree.symbol, !tree.symbol.is(Method) && pt.isInstanceOf[SelectionProto])
+      case tree: New =>
+        (tree.tpt.symbol, false)
+      case tree: RefTree =>
+        val checkLater =
+          !tree.symbol.is(Method)
+          && pt.match
+            case pt: PathSelectionProto => pt.selector.isStatic
+            case _: SelectionProto => true
+            case _ => false
+        (tree.symbol, checkLater)
 
     if Feature.safeEnabled
         && sym.exists
