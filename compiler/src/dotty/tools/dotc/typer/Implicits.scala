@@ -1095,7 +1095,7 @@ trait Implicits:
     val owner = ref.symbol.owner
     if owner.is(Module) then
       val companion = owner.sourceModule
-      if companion.isOneOf(Private | Protected) then ref.prefix match
+      ref.prefix match
         case companionRef: TermRef =>
           val pre = companionRef.prefix
           if !companion.isAccessibleFrom(pre) then
