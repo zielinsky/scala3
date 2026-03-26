@@ -17,6 +17,7 @@ import Flags.*
 import config.Printers.capt
 import annotation.constructorOnly
 import ast.tpd
+import tpd.*
 import printing.{Printer, Showable}
 import printing.Texts.Text
 import reporting.{Message, trace}
@@ -990,7 +991,7 @@ object Capabilities:
     case TypeArg(tp: Type)
     case UnsafeAssumePure
     case Formal(pref: ParamRef, app: tpd.Apply)
-    case ResultInstance(methType: Type, meth: Symbol)
+    case ResultInstance(methType: Type, tree: Tree)
     case UnapplyInstance(info: MethodType)
     case LocalInstance(restpe: Type)
     case NewInstance(tp: Type, fields: List[Symbol])
@@ -1026,15 +1027,24 @@ object Capabilities:
         if meth.exists
         then i" when checking argument to parameter ${pref.paramName} of $meth"
         else ""
-      case ResultInstance(mt, meth) =>
-        val methDescr = if meth.exists then i"$meth's type " else ""
-        i" when instantiating $methDescr$mt"
+      case ResultInstance(mt, tree) =>
+        def methDescr(tree: Tree): String = tree match
+          case app: GenericApply =>
+            methDescr(app.fun)
+          case Select(qual, nme.apply) if defn.isFunctionType(qual.tpe.widen.stripCapturing) =>
+            i"function ${methDescr(qual)}"
+          case _ if tree.symbol.exists =>
+            i"${tree.symbol}'s type "
+          case _ =>
+            ""
+        i" when instantiating ${methDescr(tree)}$mt"
       case UnapplyInstance(info) =>
         i" when instantiating argument of unapply with type $info"
       case LocalInstance(restpe) =>
         i" when instantiating expected result type $restpe of function literal"
       case NewInstance(tp, fields) =>
-        i" when constructing instance $tp$contributingStr"
+        if tp.typeSymbol.is(Module) then contributingStr
+        else i" when constructing instance $tp$contributingStr"
       case LambdaExpected(respt) =>
         i" when instantiating expected result type $respt of lambda"
       case LambdaActual(restp: Type) =>
