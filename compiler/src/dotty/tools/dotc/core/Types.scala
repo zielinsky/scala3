@@ -2042,7 +2042,10 @@ object Types extends TypeUtils {
           RefinedType(nonDependentFunType, nme.apply, mt)
         else nonDependentFunType
       case poly @ PolyType(_, mt: MethodType) =>
-        assert(!mt.isParamDependent)
+        // mt can be paramDependent here since we don't need to compute a
+        // non-dependent result approximation.
+        // TODO: Move all dependent functions to PolyFunctionOf and drop the
+        // no parameter dependencies restriction everywhere.
         defn.PolyFunctionOf(poly)
     }
 
