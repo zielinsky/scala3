@@ -7,8 +7,9 @@ import core.*
 import Constants.*, Contexts.*, Decorators.*, Flags.*, NullOpsDecorator.*, Symbols.*, Types.*
 import Names.*, NameOps.*, StdNames.*
 import ast.*, tpd.*
-import config.Printers.exhaustivity
-import printing.{ Printer, * }, Texts.*
+import config.{Feature, Printers}
+import Printers.exhaustivity
+import printing.{Printer, *}, Texts.*
 import reporting.*
 import typer.*, Applications.*, Inferencing.*, ProtoTypes.*
 import util.*
@@ -903,6 +904,7 @@ object SpaceEngine {
     && !sel.tpe.hasAnnotation(defn.RuntimeCheckedAnnot)
     && {
       ctx.settings.YcheckAllPatmat.value
+      || Feature.safeEnabled
       || isCheckable(sel.tpe)
     }
   }
@@ -948,7 +950,9 @@ object SpaceEngine {
 
     if uncovered.nonEmpty then
       val deduped = dedup(uncovered)
-      report.warning(PatternMatchExhaustivity(deduped, m), m.selector)
+      val errorMsg = PatternMatchExhaustivity(deduped, m)
+      if Feature.safeEnabled then report.error(errorMsg, m.selector)
+      else  report.warning(errorMsg, m.selector)
   }
 
   private def reachabilityCheckable(sel: Tree)(using Context): Boolean =

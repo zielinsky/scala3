@@ -1,0 +1,16 @@
+-- [E029] Pattern Match Exhaustivity Error: tests/neg-custom-args/captures/safemode-exhaustive.scala:10:25 -------------
+10 |  def f(c: Color): Int = c match // error
+   |                         ^
+   |                         match may not be exhaustive.
+   |
+   |                         It would fail on pattern case: Blue
+   |
+   | longer explanation available when compiling with `-explain`
+-- [E029] Pattern Match Exhaustivity Error: tests/neg-custom-args/captures/safemode-exhaustive.scala:20:26 -------------
+20 |  def h(x: Any): String = x match // error
+   |                          ^
+   |                          match may not be exhaustive.
+   |
+   |                          It would fail on pattern case: _: Any
+   |
+   | longer explanation available when compiling with `-explain`
