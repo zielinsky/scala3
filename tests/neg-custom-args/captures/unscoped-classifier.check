@@ -25,6 +25,7 @@
 -- [E223] CaptureChecking Error: tests/neg-custom-args/captures/unscoped-classifier.scala:17:15 ------------------------
 17 |    def gg() = g()     // error but msg could be better
    |               ^
-   |               Reference `g` is not included in the allowed capture set {any} of the self type of class E.
+   |      Reference `g` is not included in the allowed capture set {any, any²} of the self type of class E.
    |
-   |               where:    any is a root capability classified as Unscoped in the type of class E
+   |      where:    any  is a root capability classified as Unscoped in the type of class E
+   |                any² is a root capability classified as Unscoped created in class E when constructing instance E

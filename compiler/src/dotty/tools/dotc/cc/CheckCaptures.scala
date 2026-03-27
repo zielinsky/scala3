@@ -374,6 +374,10 @@ class CheckCaptures extends Recheck, SymTransformer:
         if variance > 0 then
           t match
             case t @ CapturingType(parent, refs) =>
+              refs match
+                case refs: CaptureSet.ProperVar if refs.owner == sym =>
+                  refs.normalizeLocalCaps()
+                case _ =>
               for ref <- refs.elems do
                 ref match
                   case ref: LocalCap if !ref.hiddenSet.givenOwner.exists =>
