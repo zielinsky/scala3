@@ -374,6 +374,10 @@ class CheckCaptures extends Recheck, SymTransformer:
         if variance > 0 then
           t match
             case t @ CapturingType(parent, refs) =>
+              refs match
+                case refs: CaptureSet.VarInTypeTree if refs.owner == sym =>
+                  refs.normalizeLocalCaps()
+                case _ =>
               for ref <- refs.elems do
                 ref match
                   case ref: LocalCap if !ref.hiddenSet.givenOwner.exists =>
@@ -718,10 +722,10 @@ class CheckCaptures extends Recheck, SymTransformer:
     /** If `tp` (possibly after widening singletons) is an ExprType
      *  of a parameterless method, map ResultCap instances in it to LocalCap instances
      */
-    def mapResultRoots(tp: Type, sym: Symbol)(using Context): Type =
+    def mapResultRoots(tp: Type, tree: Tree)(using Context): Type =
       tp.widenSingleton match
-        case tp: ExprType if sym.is(Method) =>
-          resultToAny(tp, Origin.ResultInstance(tp, sym))
+        case tp: ExprType if tree.symbol.is(Method) =>
+          resultToAny(tp, Origin.ResultInstance(tp, tree))
         case _ =>
           tp
 
@@ -756,7 +760,7 @@ class CheckCaptures extends Recheck, SymTransformer:
         markFree(sym.info.captureSet, tree)
 
       SafeRefs.checkSafe(tree, pt)
-      mapResultRoots(super.recheckIdent(tree, pt), tree.symbol)
+      mapResultRoots(super.recheckIdent(tree, pt), tree)
     }
 
     override def recheckThis(tree: This, pt: Type)(using Context): Type =
@@ -822,7 +826,7 @@ class CheckCaptures extends Recheck, SymTransformer:
           i"Cannot call update ${tree.symbol} of ${qualType.showRef}"
 
       val origSelType = recheckSelection(tree, qualType, name, disambiguate)
-      val selType = mapResultRoots(origSelType, tree.symbol)
+      val selType = mapResultRoots(origSelType, tree)
       val selWiden = selType.widen
 
       def capturesResult = origSelType.widenSingleton match
@@ -933,7 +937,7 @@ class CheckCaptures extends Recheck, SymTransformer:
     protected override
     def recheckApplication(tree: Apply, qualType: Type, funType: MethodType, argTypes: List[Type])(using Context): Type =
       val resultType = super.recheckApplication(tree, qualType, funType, argTypes)
-      val appType = resultToAny(resultType, Origin.ResultInstance(funType, tree.symbol))
+      val appType = resultToAny(resultType, Origin.ResultInstance(funType, tree))
       val qualCaptures = qualType.captureSet
       val argCaptures =
         for (argType, formal) <- argTypes.lazyZip(funType.paramInfos) yield
@@ -1048,7 +1052,7 @@ class CheckCaptures extends Recheck, SymTransformer:
       markFreeTypeArgs(tree.fun, meth, tree.args)
 
       val funType = super.recheckTypeApply(tree, pt)
-      val res = resultToAny(funType, Origin.ResultInstance(funType, meth))
+      val res = resultToAny(funType, Origin.ResultInstance(funType, tree))
       includeCallCaptures(tree.symbol, res, tree)
       checkContains(tree)
       res
@@ -1481,7 +1485,7 @@ class CheckCaptures extends Recheck, SymTransformer:
               else i"classified as ${cl.typeRef}"
             report.error(
               em"""$cls is classied as ${cls.classifier.typeRef} but has a field ${fld.name}
-                  |$fldClassifier
+                  |$fldClassifier.
                   |Field classifiers have to conform to the classifier of the containing class.""",
               cls.srcPos)
       // (2)
