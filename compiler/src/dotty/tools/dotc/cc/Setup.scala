@@ -954,11 +954,10 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
   private def fluidify(using Context) = new TypeMap:
     def apply(t: Type): Type = t match
       case cinfo: ClassInfo =>
-        val selfInfo1: TypeOrSymbol = cinfo.selfInfo match
-          case selfInfo: Type =>
-            inContext(ctx.withOwner(cinfo.cls))(atVariance(0)(this(selfInfo)))
-          case self: Symbol =>
-            inContext(ctx.withOwner(cinfo.cls))(atVariance(0)(this(self.info)))
+        val selfInfo1 =
+          inContext(ctx.withOwner(cinfo.cls)):
+            atVariance(0):
+              this(cinfo.cls.givenSelfType)
         cinfo.derivedClassInfo(selfInfo = selfInfo1)
       case t: MethodType =>
         mapOver(t)
