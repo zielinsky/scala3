@@ -147,17 +147,6 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
     && !sym.owner.is(CaptureChecked)
     && !defn.isFunctionSymbol(sym.owner)
 
-  private def fluidifySelfInfo(info: Type)(using Context): Type = info match
-    case cinfo: ClassInfo =>
-      val selfInfo1 = cinfo.selfInfo match
-        case NoType => NoType
-        case tp: Type => decorate(tp, Function.const(CaptureSet.Fluid))
-        case self: Symbol => decorate(self.info, Function.const(CaptureSet.Fluid))
-      if selfInfo1 eq cinfo.selfInfo then cinfo
-      else cinfo.derivedClassInfo(selfInfo = selfInfo1)
-    case _ =>
-      info
-
   /** The symbol transformer of this phase.
    *   - Resets `private` flags of parameter accessors so that we can refine them
    *     in Setup if they have non-empty capture sets.
@@ -182,7 +171,7 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
       if Synthetics.needsTransform(symd) then
         Synthetics.transform(symd, mappedInfo)
       else if sym.isClass && !sym.is(CaptureChecked) then
-        val newInfo = fluidifySelfInfo(sym.info)
+        val newInfo = fluidify(sym.info)
         if newInfo ne sym.info then symd.copySymDenotation(info = newInfo)
         else symd
       else if isPreCC(sym) then
@@ -964,6 +953,13 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
    */
   private def fluidify(using Context) = new TypeMap:
     def apply(t: Type): Type = t match
+      case cinfo: ClassInfo =>
+        val selfInfo1: TypeOrSymbol = cinfo.selfInfo match
+          case selfInfo: Type =>
+            inContext(ctx.withOwner(cinfo.cls))(atVariance(0)(this(selfInfo)))
+          case self: Symbol =>
+            inContext(ctx.withOwner(cinfo.cls))(atVariance(0)(this(self.info)))
+        cinfo.derivedClassInfo(selfInfo = selfInfo1)
       case t: MethodType =>
         mapOver(t)
       case t: TypeLambda =>
