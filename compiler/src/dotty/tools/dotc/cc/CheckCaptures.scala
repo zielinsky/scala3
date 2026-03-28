@@ -375,7 +375,7 @@ class CheckCaptures extends Recheck, SymTransformer:
           t match
             case t @ CapturingType(parent, refs) =>
               refs match
-                case refs: CaptureSet.ProperVar if refs.owner == sym =>
+                case refs: CaptureSet.VarInTypeTree if refs.owner == sym =>
                   refs.normalizeLocalCaps()
                 case _ =>
               for ref <- refs.elems do

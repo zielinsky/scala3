@@ -322,7 +322,7 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
                     mapInferred(inCaptureRefinement = true)(tp.memberInfo(getter)).strippedDealias
                   RefinedType.precise(core, getter.name,
                       CapturingType(getterType,
-                        CaptureSet.ProperVar(ctx.owner, isRefining = true)))
+                        CaptureSet.VarInTypeTree(ctx.owner, isRefining = true)))
                     .showing(i"add capture refinement $tp --> $result", capt)
                 else
                   core
@@ -779,7 +779,7 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
             // Infer the self type for the rest, which is all classes without explicit
             // self types (to which we also add nested module classes), provided they are
             // neither pure, nor are publicily extensible with an unconstrained self type.
-            val cs = CaptureSet.ProperVar(cls, CaptureSet.emptyRefs, nestedOK = false, isRefining = false)
+            val cs = CaptureSet.VarInTypeTree(cls, CaptureSet.emptyRefs, nestedOK = false, isRefining = false)
 
             if cls.derivesFrom(defn.Caps_Capability) then
               // If cls is a capability class, we need to add a LocalCap capability to ensure
@@ -939,7 +939,7 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
 
   /** Add a capture set variable to `tp` if necessary. */
   private def addVar(tp: Type, owner: Symbol, isRefining: Boolean, typeArgFormal: Type = NoType)(using Context): Type =
-    decorate(tp, CaptureSet.ProperVar(owner, _, nestedOK = !ctx.mode.is(Mode.CCPreciseOwner), isRefining), typeArgFormal)
+    decorate(tp, CaptureSet.VarInTypeTree(owner, _, nestedOK = !ctx.mode.is(Mode.CCPreciseOwner), isRefining), typeArgFormal)
 
   /** A map that adds <fluid> capture sets at all contra- and invariant positions
    *  in a type where a capture set would be needed. This is used to make types

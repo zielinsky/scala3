@@ -1028,17 +1028,16 @@ object CaptureSet:
   end Var
 
   /** Variables created in types of inferred type trees */
-  class ProperVar(override val owner: Symbol, initialElems: Refs = emptyRefs, val nestedOK: Boolean = true, isRefining: Boolean)(using /*@constructorOnly*/ ictx: Context)
+  class VarInTypeTree(override val owner: Symbol, initialElems: Refs = emptyRefs, val nestedOK: Boolean = true, isRefining: Boolean)(using /*@constructorOnly*/ ictx: Context)
   extends Var(owner, initialElems, nestedOK) {
-   
+
     /** Make sure that capset variables in types of vals and result types of
      *  non-anonymous functions contain only a single LocalCap, and furthermore
      *  that that LocalCap has as origin InDecl(owner), where owner is the val
      *  or def for which the type is defined. If the capture set does not satisfy
      *  this condition, create a LocalCap with the right origin and move other
-     *  LocalCaps to its hidden set. 
+     *  LocalCaps to its hidden set.
      *  Note: This currently does not apply to classified or read-only LocalCaps.
-     *  
      */
     def normalizeLocalCaps()(using ctx: Context): Unit =
       if !nestedOK && !owner.isAnonymousFunction then
@@ -1087,7 +1086,6 @@ object CaptureSet:
             case _ =>
               elems += elem
         }
-
 
     /** Variables that represent refinements of class parameters can have the universal
      *  capture set, since they represent only what is the result of the constructor.
