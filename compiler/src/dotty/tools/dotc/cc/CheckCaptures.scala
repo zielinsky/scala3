@@ -1485,7 +1485,7 @@ class CheckCaptures extends Recheck, SymTransformer:
               else i"classified as ${cl.typeRef}"
             report.error(
               em"""$cls is classied as ${cls.classifier.typeRef} but has a field ${fld.name}
-                  |$fldClassifier
+                  |$fldClassifier.
                   |Field classifiers have to conform to the classifier of the containing class.""",
               cls.srcPos)
       // (2)
