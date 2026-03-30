@@ -1528,7 +1528,7 @@ class Definitions {
     Set(StringClass, NothingClass, NullClass) ++ ScalaValueClasses()
 
   @tu lazy val assumedSafePackages: Set[Symbol] =
-    Set(ScalaPackageClass, ScalaCollectionImmutablePackageClass, ScalaRuntimePackageClass,
+    Set(OpsPackageClass, ScalaPackageClass, ScalaCollectionImmutablePackageClass, ScalaRuntimePackageClass,
         ScalaMathPackageClass, ScalaUtilPackageClass, JavaMathPackageClass, JavaTimePackageClass)
 
   @tu lazy val capsErasedValueMethods =
