@@ -496,11 +496,8 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
               t.derivedAnnotatedType(this(parent), ann)
           case throwsAlias(res, exc) =>
             this(expandThrowsAlias(res, exc, Nil))
-          case t: MethodType if variance > 0 && t.marksExistentialScope =>
-            val t1 = mapOver(t).asInstanceOf[MethodType]
-            if t1.resType.containsGlobalFreshDirectly then
-              t1.derivedLambdaType(resType = mappedDealias(toResult(t1.resType, t1, sym, fail)))
-            else t1
+          case t: MethodType if t.marksExistentialScope =>
+            FreshCapToResult()(mapOver(t)).asInstanceOf[MethodType]
           case t: (LazyRef | TypeVar) =>
             mapConserveSuper(t)
           case t =>

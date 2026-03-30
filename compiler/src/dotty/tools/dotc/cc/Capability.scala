@@ -69,8 +69,20 @@ object Capabilities:
 
   trait SetCapability extends CoreCapability
 
-  trait DerivedCapability extends Capability:
+  trait DerivedCapability extends Capability {
     def underlying: Capability
+
+    /** A new capability like this one but with `c` as underlying.
+     *  @pre: `c` is of an acceptable type for this capabilitty class
+     */
+    def newLikeThis(c: Capability): DerivedCapability
+
+    /** The same capability but with `c` as underlying.
+     *  @pre: `c` is of an acceptable type for this capabilitty class
+     */
+    def derivedCapability(c: Capability): DerivedCapability =
+      if c eq underlying then this else newLikeThis(c)
+  }
 
   /** If `x` is a capability, its maybe capability `x?`. `x?` stands for a capability
    *  `x` that might or might not be part of a capture set. We have `{} <: {x?} <: {x}`.
@@ -89,7 +101,8 @@ object Capabilities:
    *
    *   but it has fewer issues with type inference.
    */
-  case class Maybe(underlying: Capability) extends DerivedCapability
+  case class Maybe(underlying: Capability) extends DerivedCapability:
+    def newLikeThis(c: Capability) = Maybe(c)
 
   /** The readonly capability `x.rd`. We have {x.rd} <: {x}.
    *
@@ -98,7 +111,8 @@ object Capabilities:
    *      (x?).readOnly = (x.rd)?
    */
   case class ReadOnly(underlying: CoreCapability | RootCapability | Reach | Restricted)
-  extends DerivedCapability
+  extends DerivedCapability:
+    def newLikeThis(c: Capability) = ReadOnly(c.asInstanceOf)
 
   /** The restricted capability `x.only[C]`. We have {x.only[C]} <: {x}.
    *
@@ -108,7 +122,8 @@ object Capabilities:
    *      (x.rd).restrict[T] = (x.restrict[T]).rd
    */
   case class Restricted(underlying: CoreCapability | RootCapability | Reach, cls: ClassSymbol)
-  extends DerivedCapability
+  extends DerivedCapability:
+    def newLikeThis(c: Capability) = Restricted(c.asInstanceOf, cls)
 
   /** If `x` is a capability, its reach capability `x*`. `x*` stands for all
    *  capabilities reachable through `x`.
@@ -123,7 +138,8 @@ object Capabilities:
    *      (x.rd).reach      = (x.reach).rd
    *      (x.only[T]).reach = (x*).only[T]
    */
-  case class Reach(underlying: ObjectCapability) extends DerivedCapability
+  case class Reach(underlying: ObjectCapability) extends DerivedCapability:
+    def newLikeThis(c: Capability) = Reach(c.asInstanceOf)
 
   /** A class for the global root capabilities referenced as `caps.any` and `caps.fresh`.
    *  They do not subsume other capabilities, except in arguments of `withCapAsRoot` calls.
@@ -1051,6 +1067,43 @@ object Capabilities:
 
   // ---------- Maps between different kinds of root capabilities -----------------
 
+  /** Map GlobalFresh capabilities in results of methods to ResultCaps
+   *  This map is peculiar since it has to run very early in Setup where some capture
+   *  sets are not yet known and consequently `map` in CaptureSet might give wrong results.
+   *  A test case where this would happen is neg-custom-args/captures/i13816.scala
+   *  This motivates the various tricks explained below.
+   */
+  class FreshCapToResult(using Context) extends TypeMap {
+    def apply(t: Type) =
+      t match
+        case t @ AnnotatedType(parent, ann) =>
+          // Leave capture sets and other annotations as is
+          t.derivedAnnotatedType(this(parent), ann)
+        case t @ defn.RefinedFunctionOf(mt) =>
+          // Don't touch parents of refined function types
+          t.derivedRefinedType(refinedInfo = apply(mt))
+        case mt: MethodType =>
+          val freshToResultInResult = new TypeMap {
+
+            def apply(t: Type) = t match
+              case t @ CapturingType(parent, refs: CaptureSet.Const) =>
+                // Map capture set elements one-by-one, don't try to form unions
+                val elems1 = refs.elems.map(mapCapability(_))
+                val refs1 = if elems1 == refs.elems then refs else CaptureSet(elems1.toList*)
+                t.derivedCapturingType(this(parent), refs1)
+              case _ =>
+                mapOver(t)
+
+            // Leave all elements unchanged except for mapping GlobalFresh to ResultFresh
+            override def mapCapability(c: Capability, deep: Boolean): Capability = c match
+              case GlobalFresh => ResultCap(mt)
+              case c: DerivedCapability => c.derivedCapability(mapCapability(c.underlying, deep))
+              case c => c
+          }
+          mapOver(mt.derivedLambdaType(resType = freshToResultInResult(mt.resType)))
+        case _ =>
+          mapOver(t)
+  }
 
   /** Map each occurrence of `caps.any` to a different LocalCap instance
    *  Exception: CapSet^ stays as it is.
@@ -1101,7 +1154,7 @@ object Capabilities:
 
   end GlobalCapToLocal
 
-  /** Maps caps.any to LocalCap instances. GlobalToLocalCap is a BiTypeMap since we don't want to
+  /** Maps caps.any to LocalCap instances. GlobalCapToLocal is a BiTypeMap since we don't want to
    *  freeze a set when it is mapped. On the other hand, we do not want LocalCap
    *  values to flow back to caps.any since that would fail disallowRootCapability
    *  tests elsewhere. We therefore use `withNoVarsMapped` to prevent
@@ -1239,7 +1292,7 @@ object Capabilities:
         else
           // we accept variance < 0, and leave the `any` as it is          c
           c
-      case GlobalFresh if variance > 0 =>
+      case GlobalFresh =>
         ResultCap(mt) // if variance <= 0 we leave the fresh to be flagged later
       case _ =>
         super.mapCapability(c, deep)
