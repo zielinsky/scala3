@@ -170,6 +170,10 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
             transformExplicitType(symd.info, sym)(using symCtx)
       if Synthetics.needsTransform(symd) then
         Synthetics.transform(symd, mappedInfo)
+      else if sym.isClass && !sym.is(CaptureChecked) then
+        val newInfo = fluidify(sym.info)
+        if newInfo ne sym.info then symd.copySymDenotation(info = newInfo)
+        else symd
       else if isPreCC(sym) then
         symd.copySymDenotation(info = fluidify(sym.info))
       else if symd.owner.isTerm
@@ -946,6 +950,12 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
    */
   private def fluidify(using Context) = new TypeMap:
     def apply(t: Type): Type = t match
+      case cinfo: ClassInfo =>
+        val selfInfo1 =
+          inContext(ctx.withOwner(cinfo.cls)):
+            atVariance(0):
+              this(cinfo.cls.givenSelfType)
+        cinfo.derivedClassInfo(selfInfo = selfInfo1)
       case t: MethodType =>
         mapOver(t)
       case t: TypeLambda =>
