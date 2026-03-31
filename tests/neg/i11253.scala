@@ -12,6 +12,12 @@ enum E3[A](val inner: A) extends Enum[E3[Int]] { // error
   case X extends E3[String]("hello")
 }
 
+// --- Java enum behavior: generic enums with wildcard type args rejected ---
+
+enum E5[+A] extends Enum[E5[?]] { case X extends E5[Nothing] } // error
+
+enum E6[A] extends Enum[E6[?]] { case X extends E6[Unit] } // error
+
 // --- Cases from #9541 ---
 
 trait U[E <: Enum[E]] extends Enum[E]

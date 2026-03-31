@@ -1583,9 +1583,9 @@ trait Checking {
             val clsRef =
               if cls.typeParams.isEmpty then cls.typeRef
               else cls.typeRef.appliedTo(cls.typeParams.map(_.typeRef))
-            if typeArg.classSymbol != cls || !(clsRef <:< typeArg) then
+            if !(typeArg =:= clsRef) then
               report.error(
-                em"enum $cls extends ${javaEnumBase}, but $clsRef is not a subtype of $typeArg",
+                em"enum $cls extends ${javaEnumBase}, but the type argument $typeArg is not the same as $clsRef",
                 cdef.srcPos)
           case _ =>
     def isEnumAnonCls =
