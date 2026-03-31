@@ -1926,7 +1926,19 @@ class QuotesImpl private (using val ctx: Context) extends Quotes, QuoteUnpickler
             else
               member.info
 
-          memberInfo.asSeenFrom(self, member.owner) match
+          val memberInfoSubstituted =
+            if member.owner.isConstructor then
+              self match
+                case dotc.core.Types.AppliedType(_, args) =>
+                  val ctorTypeParams = member.owner.paramSymss.flatten.filter(_.isType)
+                  if ctorTypeParams.length == args.length then
+                    memberInfo.subst(ctorTypeParams, args)
+                  else
+                    memberInfo
+                case _ => memberInfo
+            else memberInfo
+
+          memberInfoSubstituted.asSeenFrom(self, member.owner) match
             case dotc.core.Types.ClassInfo(prefix, sym, _, _, _) =>
               // We do not want to expose ClassInfo in the reflect API, instead we change it to a TypeRef,
               // see issue #22395
