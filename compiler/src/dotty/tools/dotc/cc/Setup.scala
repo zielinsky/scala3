@@ -395,6 +395,8 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
     object toCapturing extends DeepTypeMap, SetupTypeMap {
       override def toString = "transformExplicitType"
 
+      private var enclMethodType: MethodType | Null =  null
+
       /** Expand $throws aliases. This is hard-coded here since $throws aliases in stdlib
         * are defined with `?=>` rather than `?->`.
         * We also have to add a capture set to the last expanded throws alias. I.e.
@@ -422,17 +424,24 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
 
       /** 1. Check that parents of capturing types are not pure.
        */
-      def checkRetainsOK(tp: Type): tp.type =
-        tp match
-          case CapturingType(parent, refs) =>
-            if parent.isAlwaysPure && !tptToCheck.span.isZeroExtent then
-              // If tptToCheck is zero-extent it could be copied from an overridden
-              // method's result type. In that case, there's no point requiring
-              // an explicit result type in the override, the inherited capture set
-              // will be ignored anyway.
-              fail(em"$parent is a pure type, it makes no sense to add a capture set to it")
-          case _ =>
-        tp
+      def finalizeCapturing(tp: Type): Type = tp match
+        case CapturingType(parent, refs) =>
+          if parent.isAlwaysPure && !tptToCheck.span.isZeroExtent then
+            // If tptToCheck is zero-extent it could be copied from an overridden
+            // method's result type. In that case, there's no point requiring
+            // an explicit result type in the override, the inherited capture set
+            // will be ignored anyway.
+            fail(em"$parent is a pure type, it makes no sense to add a capture set to it")
+
+          def mapElem(c: Capability): Capability = c match
+            case GlobalFresh if enclMethodType != null => ResultCap(enclMethodType.nn)
+            case c: DerivedCapability => c.derivedCapability(mapElem(c.underlying))
+            case c => c
+
+          val elems1 = refs.elems.map(mapElem)
+          val refs1 = if elems1 == refs.elems then refs else CaptureSet(elems1.toList*)
+          tp.derivedCapturingType(parent, refs1)
+        case tp => tp
 
       /** If `t` is an alias of some other proper type, map the alias. If that
        *  gives a different type, return that type otherwise return `t` itself.
@@ -473,14 +482,14 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
       def innerApply(t: Type) =
         t match
           case t @ CapturingType(parent, refs) =>
-            checkRetainsOK:
+            finalizeCapturing:
               t.derivedCapturingType(stripImpliedCaptureSet(this(parent)), refs)
           case t @ AnnotatedType(parent, ann: RetainingAnnotation) if ann.isStrict =>
             val parent1 = stripImpliedCaptureSet(this(parent))
             if !tptToCheck.isEmpty then
               checkWellformedLater(parent1, ann, tptToCheck)
             try
-              checkRetainsOK:
+              finalizeCapturing:
                 CapturingType(parent1, ann.toCaptureSet)
             catch case ex: IllegalCaptureRef =>
               if !tptToCheck.isEmpty then
@@ -496,8 +505,20 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
               t.derivedAnnotatedType(this(parent), ann)
           case throwsAlias(res, exc) =>
             this(expandThrowsAlias(res, exc, Nil))
-          case t: MethodType if t.marksExistentialScope =>
-            FreshCapToResult()(mapOver(t)).asInstanceOf[MethodType]
+          case mt: MethodType if mt.marksExistentialScope =>
+            variance = -variance
+            val ptypes1 = mt.paramInfos.mapConserve(this)
+            variance = -variance
+            val saved = enclMethodType
+            enclMethodType = mt
+            try derivedLambdaType(mt)(ptypes1, this(mt.resType))
+            finally enclMethodType = saved
+          case t @ AppliedType(tycon, args)
+          if defn.isNonRefinedFunction(t) && args.last.containsGlobalFreshDirectly =>
+            // Convert to dependent function so that we have a binder for `fresh` in result type.
+            apply(
+              depFun(args.init, args.last,
+                isContextual = defn.isContextFunctionClass(tycon.classSymbol)))
           case t: (LazyRef | TypeVar) =>
             mapConserveSuper(t)
           case t =>
