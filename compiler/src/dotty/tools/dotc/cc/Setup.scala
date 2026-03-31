@@ -423,14 +423,14 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
         else fntpe
 
       /** 1. Check that parents of capturing types are not pure.
+       *  2. Map GlobalFresh to ResultCap in capturing types
        */
       def finalizeCapturing(tp: Type): Type = tp match
         case CapturingType(parent, refs) =>
           if parent.isAlwaysPure && !tptToCheck.span.isZeroExtent then
             // If tptToCheck is zero-extent it could be copied from an overridden
-            // method's result type. In that case, there's no point requiring
-            // an explicit result type in the override, the inherited capture set
-            // will be ignored anyway.
+            // method's result type. In that case, there's no point issuing an
+            // error, the inherited capture set will be ignored anyway.
             fail(em"$parent is a pure type, it makes no sense to add a capture set to it")
 
           def mapElem(c: Capability): Capability = c match
@@ -443,38 +443,13 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
           tp.derivedCapturingType(parent, refs1)
         case tp => tp
 
-      /** If `t` is an alias of some other proper type, map the alias. If that
-       *  gives a different type, return that type otherwise return `t` itself.
-       *  Always return `t` itself if it is a type constructor.
+      /** Follow aliases also under newly created capturing types.
        */
-      def mappedDealias(t: Type) =
-        val t1 = t.dealiasKeepAnnotsAndOpaques
-        if (t1 ne t) && !t1.isLambdaSub
-          // We have to exclude higher-kinded type aliases since these might undermine
-          // the no-aliasing strategy. E.g. for
-          //
-          //    type G[cs^] = () -> A^{cs}
-          //
-          // we don't want to dealias G[{fresh}], but if we can de-alias type constructors
-          // then G gets dealiased to `[cs^] =>> () => A^{cs}` and then G[{fresh}] gets
-          // mapped to `() => A^{fresh}` by beta reduction rule. Test case in outer-fresh.scala.
-        then
-          val t2 = apply(t1)
-          if t2 ne t1 then t2
-          else t
-        else t
-
-      def mapAndMaybeDealias(t: Type): Type = mapOver(t) match
-        case t1 @ AppliedType(tycon, args)
-        if defn.isNonRefinedFunction(t1) && args.last.containsGlobalFreshDirectly =>
-          // Convert to dependent function so that we have a binder for `fresh` in result type.
-          apply(
-            depFun(args.init, args.last,
-              isContextual = defn.isContextFunctionClass(tycon.classSymbol)))
+      override def mapFollowingAliases(t: Type) = t match
         case t1 @ CapturingType(parent, refs) =>
-          t1.derivedCapturingType(stripImpliedCaptureSet(mapAndMaybeDealias(parent)), refs)
+          t1.derivedCapturingType(stripImpliedCaptureSet(mapFollowingAliases(parent)), refs)
         case t1 =>
-          if t1.containsGlobalFreshDirectly then t1 else mappedDealias(t1)
+          super.mapFollowingAliases(t1)
 
       /** Map references to capability classes C to C^{any}, or (if Mutable)
        *  tp C^{any.rd}. Normalize captures and map to dependent functions.
@@ -522,7 +497,7 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
           case t: (LazyRef | TypeVar) =>
             mapConserveSuper(t)
           case t =>
-            val t1 = normalizeCaptures(mapAndMaybeDealias(t))
+            val t1 = normalizeCaptures(mapFollowingAliases(mapOver(t)))
             if t.derivesFromCapability
                 && t.typeParams.isEmpty
                 && !t.isSingleton
