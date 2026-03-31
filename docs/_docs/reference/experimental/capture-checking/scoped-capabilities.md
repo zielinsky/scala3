@@ -343,28 +343,25 @@ By default, `fresh` in a function result type is bound by the immediately enclos
 sometimes we want the `fresh` to be bound by an _outer_ function instead. This can be achieved by
 using type aliases or capture-set parameters to "tunnel" the `fresh` through an inner function type.
 
-Consider these type definitions:
+Consider this type definition:
 ```scala sc-name:scoped-outer-bound-fresh-types sc-compile-with:scoped-cc-context
 class A
 type F[X] = (t: String) -> X
-type G[C^] = (t: String) -> A^{C}
 ```
 
-With these aliases, we can write:
+With this aliases, we can write:
 ```scala sc-compile-with:scoped-outer-bound-fresh-types
 import caps.fresh
 
 val x: (s: String) -> F[A^{fresh}] = ???
-val y: (s: String) -> G[{fresh}] = ???
 ```
 
-In both cases, the `fresh` is bound by the outer function `(s: String) -> ...`, not by the inner
+In this case, the `fresh` is bound by the outer function `(s: String) -> ...`, not by the inner
 function `(t: String) -> ...`. This works because `fresh` appears outside the inner function type
-definition—it is passed as a type argument or capture-set argument to the alias. The expanded types
-are:
+definition—it is passed as a type argument to the alias. The expanded type
+is:
 ```scala sc:nocompile
 x: ∃fresh. (s: String) -> (t: String) -> A^{fresh}
-y: ∃fresh. (s: String) -> (t: String) -> A^{fresh}
 ```
 
 This technique is useful when a capability needs to span nested function calls while remaining
