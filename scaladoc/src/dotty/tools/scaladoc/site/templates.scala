@@ -89,7 +89,7 @@ case class TemplateFile(
           )
           ssctx.snippetChecker.checkSnippet(snippet, Some(compilerData), arg, sourceFile, 0).collect {
               case r: SnippetCompilationResult if !r.isSuccessful =>
-                r.reportMessages()(using ssctx.outerCtx)
+                ssctx.bufferSnippetMessages(r.messages)
                 r
               case r => r
           }

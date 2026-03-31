@@ -8,6 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 import java.nio.file.Files
+import dotty.tools.scaladoc.assertMessagesAbout
 import util.IO
 
 class TemplateFileTests:
@@ -290,6 +291,7 @@ class TemplateFileTests:
       given StaticSiteContext = dctx.staticSiteContext.get
 
       loadTemplateFile(tmpFile).resolveInner(RenderingContext(Map.empty))
+      summon[StaticSiteContext].reportSnippetMessages()
 
       val diagnostics = dctx.compilerContext.reportedDiagnostics
       assertEquals(diagnostics.errorMsgs.mkString("\n"), 1, diagnostics.errors.size)
@@ -298,6 +300,61 @@ class TemplateFileTests:
       assertEquals(10, error.pos.line)
       assertEquals(14, error.pos.column)
     finally IO.delete(tmpFile)
+
+  @Test
+  def snippetErrorsAreBufferedAcrossTemplates(): Unit =
+    val tmpRoot = Files.createTempDirectory("snippet-errors").toFile()
+    val tmpDocs = File(tmpRoot, "_docs")
+    val first = File(tmpDocs, "first.md")
+    val second = File(tmpDocs, "second.md")
+    try
+      Files.createDirectories(tmpDocs.toPath)
+      Files.write(
+        first.toPath,
+        """---
+          |title: "First"
+          |---
+          |
+          |```scala
+          |val x = doesNotCompile
+          |```
+          |""".stripMargin.getBytes
+      )
+      Files.write(
+        second.toPath,
+        """---
+          |title: "Second"
+          |---
+          |
+          |```scala
+          |val y = stillDoesNotCompile
+          |```
+          |""".stripMargin.getBytes
+      )
+
+      val dctx = DocContext(
+        testArgs().copy(
+          docsRoot = Some(tmpRoot.getAbsolutePath),
+          snippetCompiler = List(s"${tmpDocs.getAbsolutePath}=compile")
+        ),
+        testContext
+      )
+      given StaticSiteContext = dctx.staticSiteContext.get
+
+      loadTemplateFile(first).resolveInner(RenderingContext(Map.empty))
+      loadTemplateFile(second).resolveInner(RenderingContext(Map.empty))
+
+      assertEquals(0, dctx.compilerContext.reportedDiagnostics.errors.size)
+
+      summon[StaticSiteContext].reportSnippetMessages()
+
+      val diagnostics = dctx.compilerContext.reportedDiagnostics
+      assertEquals(diagnostics.errorMsgs.mkString("\n"), 2, diagnostics.errors.size)
+      assertMessagesAbout(diagnostics.errorMsgs)(
+        "doesNotCompile",
+        "stillDoesNotCompile"
+      )
+    finally IO.delete(tmpRoot)
 
   private def renderNamedSnippet(relativePath: String, noSnippetNamesFor: List[String] = Nil): String =
     val tmpRoot = Files.createTempDirectory("snippet-name-rendering").toFile()
