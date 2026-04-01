@@ -79,7 +79,7 @@ object Mutability:
      *  @param varsOnly if true, disregard all update methods and search only for mutabe fields
      */
     def isStatefulType(varsOnly: Boolean = false)(using Context): Boolean =
-      tp.derivesFrom(defn.Caps_Stateful)
+      tp.derivesFromStateful
       && tp.membersBasedOnFlags(Mutable, EmptyFlags).exists: mbr =>
         mbr.symbol.isUpdateMethod && !varsOnly
         || mbr.symbol.isMutableVar && !mbr.symbol.hasAnnotation(defn.UntrackedCapturesAnnot)
@@ -89,7 +89,7 @@ object Mutability:
      *                   status of some capture set variable from Ignored to Writer.
      */
     private def exclusivity(required: Boolean)(using Context): Exclusivity =
-      if tp.derivesFrom(defn.Caps_Stateful) then
+      if tp.derivesFromStateful then
         tp match
           case tp: Capability if tp.isExclusive(required) => Exclusivity.OK
           case _ =>
@@ -103,7 +103,7 @@ object Mutability:
      */
     private def exclusivityInContext(required: Boolean = false)(using Context): Exclusivity = tp match
       case tp: ThisType =>
-        if tp.derivesFrom(defn.Caps_Stateful)
+        if tp.derivesFromStateful
         then ctx.owner.inExclusivePartOf(tp.cls)
         else Exclusivity.OK
       case tp: TermRef =>
@@ -247,7 +247,7 @@ object Mutability:
   def adaptReadOnly(actual: Type, original: Type, expected: Type, tree: Tree)(using Context): Type =
     adaptReadOnlyToExpected(actual, expected) match
       case improved @ CapturingType(parent, refs)
-      if parent.derivesFrom(defn.Caps_Stateful)
+      if parent.derivesFromStateful
           && expected.isValueType
           && refs.isExclusive()
           && !original.exclusivityInContext().isOK =>
@@ -264,7 +264,7 @@ object Mutability:
    */
   def freeze(tp: Type, pos: SrcPos)(using Context): Type = tp.widen match
     case tpw @ CapturingType(parent, refs)
-    if parent.derivesFromMutable && !tpw.isBoxed =>
+    if parent.derivesFromCapTrait(defn.Caps_Mutable) && !tpw.isBoxed =>
       if !Feature.sepChecksEnabled then
         report.warning(
           em"""freeze is safe only if separation checking is enabled.

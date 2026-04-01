@@ -969,7 +969,7 @@ class CheckCaptures extends Recheck, SymTransformer:
             && !resultType.isBoxedCapturing
             && !tree.fun.symbol.isConstructor
             && !resultType.captureSet.containsResultCapability
-            && !resultType.captureSet.elems.exists(_.derivesFromUnscoped)
+            && !resultType.captureSet.elems.exists(_.derivesFromCapTrait(defn.Caps_Unscoped))
             && qualCaptures.mightSubcapture(refs)
             && argCaptures.forall(_.mightSubcapture(refs)) =>
           val callCaptures = argCaptures.foldLeft(qualCaptures)(_ ++ _)

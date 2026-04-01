@@ -686,7 +686,7 @@ object CaptureSet:
       && variance >= 0
       && sym.isContainedIn(defn.ScalaPackageClass)
     if parent.derivesFromStateful
-      && parent.derivesFromExclusive
+      && parent.derivesFromCapTrait(defn.Caps_ExclusiveCapability)
       && !isArrayFromScalaPackage
     then GlobalAny.readOnly
     else GlobalAny

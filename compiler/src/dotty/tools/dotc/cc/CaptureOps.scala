@@ -393,7 +393,8 @@ extension (tp: Type)
   def derivesFromCapTrait(cls: ClassSymbol)(using Context): Boolean = tp.dealiasKeepAnnots match
     case tp: (TypeRef | AppliedType) =>
       val sym = tp.typeSymbol
-      if sym.isClass then sym.derivesFrom(cls)
+      if sym.isClass
+      then (if sym.isArrayUnderStrictMut then defn.Caps_Mutable else sym).derivesFrom(cls)
       else tp.superType.derivesFromCapTrait(cls)
     case tp: (TypeProxy & ValueType) =>
       tp.superType.derivesFromCapTrait(cls)
@@ -404,18 +405,8 @@ extension (tp: Type)
     case _ =>
       false
 
-  def derivesFromCapability(using Context): Boolean =
-    derivesFromCapTrait(defn.Caps_Capability) || isArrayUnderStrictMut
-  def derivesFromExclusive(using Context): Boolean =
-    derivesFromCapTrait(defn.Caps_ExclusiveCapability) || isArrayUnderStrictMut
-  def derivesFromStateful(using Context): Boolean =
-    derivesFromCapTrait(defn.Caps_Stateful) || isArrayUnderStrictMut
-  def derivesFromShared(using Context): Boolean =
-    derivesFromCapTrait(defn.Caps_SharedCapability)
-  def derivesFromUnscoped(using Context): Boolean =
-    derivesFromCapTrait(defn.Caps_Unscoped) || isArrayUnderStrictMut
-  def derivesFromMutable(using Context): Boolean =
-    derivesFromCapTrait(defn.Caps_Mutable) || isArrayUnderStrictMut
+  def derivesFromStateful(using Context): Boolean = derivesFromCapTrait(defn.Caps_Stateful)
+  def derivesFromCapability(using Context): Boolean = derivesFromCapTrait(defn.Caps_Capability)
 
   def isArrayUnderStrictMut(using Context): Boolean = tp.classSymbol.isArrayUnderStrictMut
 
