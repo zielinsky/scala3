@@ -1077,44 +1077,6 @@ object Capabilities:
 
   // ---------- Maps between different kinds of root capabilities -----------------
 
-  /** Map GlobalFresh capabilities in results of methods to ResultCaps
-   *  This map is peculiar since it has to run very early in Setup where some capture
-   *  sets are not yet known and consequently `map` in CaptureSet might give wrong results.
-   *  A test case where this would happen is neg-custom-args/captures/i13816.scala
-   *  This motivates the various tricks explained below.
-   */
-  class FreshCapToResult(using Context) extends TypeMap {
-    def apply(t: Type) =
-      t match
-        case t @ AnnotatedType(parent, ann) =>
-          // Leave capture sets and other annotations as is
-          t.derivedAnnotatedType(this(parent), ann)
-        case t @ defn.RefinedFunctionOf(mt) =>
-          // Don't touch parents of refined function types
-          t.derivedRefinedType(refinedInfo = apply(mt))
-        case mt: MethodType =>
-          val freshToResultInResult = new TypeMap {
-
-            def apply(t: Type) = t match
-              case t @ CapturingType(parent, refs: CaptureSet.Const) =>
-                // Map capture set elements one-by-one, don't try to form unions
-                val elems1 = refs.elems.map(mapCapability(_))
-                val refs1 = if elems1 == refs.elems then refs else CaptureSet(elems1.toList*)
-                t.derivedCapturingType(this(parent), refs1)
-              case _ =>
-                mapOver(t)
-
-            // Leave all elements unchanged except for mapping GlobalFresh to ResultFresh
-            override def mapCapability(c: Capability, deep: Boolean): Capability = c match
-              case GlobalFresh => ResultCap(mt)
-              case c: DerivedCapability => c.derivedCapability(mapCapability(c.underlying, deep))
-              case c => c
-          }
-          mapOver(mt.derivedLambdaType(resType = freshToResultInResult(mt.resType)))
-        case _ =>
-          mapOver(t)
-  }
-
   /** Map each occurrence of `caps.any` to a different LocalCap instance
    *  Exception: CapSet^ stays as it is.
    */

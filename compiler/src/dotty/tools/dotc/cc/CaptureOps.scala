@@ -471,7 +471,7 @@ extension (tp: Type)
         else if variance <= 0 then false
         else if directly && defn.isFunctionSymbol(t.typeSymbol) then false
         else t match
-          case CapturingType(_, refs) if refs.elems.exists(_.core == c) =>
+          case CapturingOrRetainsType(_, refs) if refs.elems.exists(_.core == c) =>
             true
           case t @ AnnotatedType(parent, ann) =>
             // Don't traverse annotations, which includes capture sets
