@@ -73,14 +73,16 @@ object Mutability:
       else sym.owner.inExclusivePartOf(cls)
 
   extension (tp: Type)
-    /** Is this a type extending `Stateful` that has non-private update methods
-     *  or mutable fields?
+
+    /** Is this a type extending `Stateful` that has update methods or mutable fields?
+     *  Disregard mutable fields with @untrackedCaptures annotations.
+     *  @param varsOnly if true, disregard all update methods and search only for mutabe fields
      */
-    def isStatefulType(using Context): Boolean =
+    def isStatefulType(varsOnly: Boolean = false)(using Context): Boolean =
       tp.derivesFrom(defn.Caps_Stateful)
       && tp.membersBasedOnFlags(Mutable, EmptyFlags).exists: mbr =>
-        if mbr.symbol.is(Method) then mbr.symbol.isUpdateMethod
-        else !mbr.symbol.hasAnnotation(defn.UntrackedCapturesAnnot)
+        mbr.symbol.isUpdateMethod && !varsOnly
+        || mbr.symbol.isMutableVar && !mbr.symbol.hasAnnotation(defn.UntrackedCapturesAnnot)
 
     /** OK, except if `tp` extends `Stateful` but `tp`'s capture set is non-exclusive
      *  @param required  if true, exclusivity can be obtained by setting the mutability
@@ -120,7 +122,7 @@ object Mutability:
         tp.selector.isReadOnlyMember || tp.selector.isMutableVar && tp.pt != LhsProto
       case _ =>
         tp.isValueType
-        && (!tp.isStatefulType || tp.captureSet.mutability == CaptureSet.Mutability.Reader)
+        && (!tp.isStatefulType() || tp.captureSet.mutability == CaptureSet.Mutability.Reader)
 
   extension (ref: TermRef | ThisType)
     /** Map `ref` to `ref.readOnly` if its type extends Mutable, and one of the

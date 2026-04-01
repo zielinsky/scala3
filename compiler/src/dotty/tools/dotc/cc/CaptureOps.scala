@@ -606,7 +606,7 @@ extension (cls: ClassSymbol) {
       case _ => Nil
 
     def maybeRO(ref: Capability, fields: List[Symbol]) =
-      if !cls.typeRef.isStatefulType && fields.forall(allLocalCapsInTypeAreRO)
+      if !cls.typeRef.isStatefulType() && fields.forall(allLocalCapsInTypeAreRO)
       then ref.readOnly
       else ref
 
@@ -614,7 +614,8 @@ extension (cls: ClassSymbol) {
       LocalCap(Origin.NewInstance(core, fields))
 
     var implied = impliedClassifiers(cls)
-    if cls.typeRef.isStatefulType then implied = dominators(cls.classifier :: Nil, implied)
+    if cls.typeRef.isStatefulType(varsOnly = true) then
+      implied = dominators(cls.classifier :: Nil, implied)
     val fields = contributingFields(cls)
     val impliedSet = ccState.localCapClassifiersAndFieldsCache.getOrElseUpdate(cls, (implied, fields)) match
       case (Nil, _) =>
