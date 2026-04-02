@@ -300,7 +300,7 @@ class Ref[T](init: T) extends Mutable:
 import scala.reflect.ClassTag
 
 class Arr[T: ClassTag](n: Int) extends Mutable:
-  private val elems: Array[T] = new Array[T](n)
+  private val elems: Array[T]^ = new Array[T](n)
   def apply(i: Int): T = elems(i)
   update def update(i: Int, x: T): Unit = elems(i) = x
 ```

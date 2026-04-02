@@ -56,7 +56,7 @@ object Mutability:
     def isUpdateMethod(using Context): Boolean =
       sym.isAllOf(Mutable | Method)
         && (!sym.is(Accessor) || (sym.isSetter && sym.owner.derivesFrom(defn.Caps_Stateful) && !sym.field.hasAnnotation(defn.UntrackedCapturesAnnot)))
-      || ccConfig.strictMutability && sym.name == nme.update && sym == defn.Array_update
+      || sym.name == nme.update && sym.owner.isArrayUnderStrictMut
 
     /** A read-only member is a lazy val or a method that is not an update method. */
     def isReadOnlyMember(using Context): Boolean =
@@ -79,7 +79,7 @@ object Mutability:
      *  @param varsOnly if true, disregard all update methods and search only for mutabe fields
      */
     def isStatefulType(varsOnly: Boolean = false)(using Context): Boolean =
-      tp.derivesFrom(defn.Caps_Stateful)
+      tp.derivesFromStateful
       && tp.membersBasedOnFlags(Mutable, EmptyFlags).exists: mbr =>
         mbr.symbol.isUpdateMethod && !varsOnly
         || mbr.symbol.isMutableVar && !mbr.symbol.hasAnnotation(defn.UntrackedCapturesAnnot)
@@ -89,7 +89,7 @@ object Mutability:
      *                   status of some capture set variable from Ignored to Writer.
      */
     private def exclusivity(required: Boolean)(using Context): Exclusivity =
-      if tp.derivesFrom(defn.Caps_Stateful) then
+      if tp.derivesFromStateful then
         tp match
           case tp: Capability if tp.isExclusive(required) => Exclusivity.OK
           case _ =>
@@ -103,7 +103,7 @@ object Mutability:
      */
     private def exclusivityInContext(required: Boolean = false)(using Context): Exclusivity = tp match
       case tp: ThisType =>
-        if tp.derivesFrom(defn.Caps_Stateful)
+        if tp.derivesFromStateful
         then ctx.owner.inExclusivePartOf(tp.cls)
         else Exclusivity.OK
       case tp: TermRef =>
@@ -162,7 +162,7 @@ object Mutability:
     case actual @ CapturingType(parent, refs) =>
       val parent1 = adaptReadOnlyToExpected(parent, expected)
       val refs1 =
-        if parent1.derivesFrom(defn.Caps_Stateful)
+        if parent1.derivesFromStateful
             && expected.isValueType
             && (!expected.derivesFromStateful || expected.captureSet.isAlwaysReadOnly)
             && !expected.isSingleton
@@ -247,7 +247,7 @@ object Mutability:
   def adaptReadOnly(actual: Type, original: Type, expected: Type, tree: Tree)(using Context): Type =
     adaptReadOnlyToExpected(actual, expected) match
       case improved @ CapturingType(parent, refs)
-      if parent.derivesFrom(defn.Caps_Stateful)
+      if parent.derivesFromStateful
           && expected.isValueType
           && refs.isExclusive()
           && !original.exclusivityInContext().isOK =>
@@ -264,7 +264,7 @@ object Mutability:
    */
   def freeze(tp: Type, pos: SrcPos)(using Context): Type = tp.widen match
     case tpw @ CapturingType(parent, refs)
-    if parent.derivesFromMutable && !tpw.isBoxed =>
+    if parent.derivesFromCapTrait(defn.Caps_Mutable) && !tpw.isBoxed =>
       if !Feature.sepChecksEnabled then
         report.warning(
           em"""freeze is safe only if separation checking is enabled.

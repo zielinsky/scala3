@@ -160,10 +160,6 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
       def mappedInfo =
         if toBeUpdated.contains(sym) then
           symd.info // don't transform symbols that will anyway be updated
-        else if sym.isArrayUnderStrictMut then
-          val cinfo: ClassInfo = sym.info.asInstanceOf
-          cinfo.derivedClassInfo(
-            declaredParents = cinfo.declaredParents :+ defn.Caps_Mutable.typeRef)
         else
           val symCtx = if sym.isOneOf(TermParamOrAccessor) then ctx else ctx.withOwner(sym)
           toResultInReturnType(sym, msg => throw TypeError(msg)):
@@ -778,7 +774,7 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
             // neither pure, nor are publicily extensible with an unconstrained self type.
             val cs = CaptureSet.VarInTypeTree(cls, CaptureSet.emptyRefs, nestedOK = false, isRefining = false)
 
-            if cls.derivesFrom(defn.Caps_Capability) then
+            if cls.derivesFromCapability then
               // If cls is a capability class, we need to add a LocalCap capability to ensure
               // we cannot treat the class as pure.
               LocalCap(cls, cls.thisType, Origin.InDecl(cls)).singletonCaptureSet.subCaptures(cs)
@@ -857,7 +853,7 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
         val sym = tp.typeSymbol
         if sym.isClass
         then !sym.isPureClass
-        else !tp.derivesFrom(defn.Caps_CapSet) // CapSet arguments don't get other capture set variables added
+        else !tp.derivesFromCapSet // CapSet arguments don't get other capture set variables added
           && instanceCanBeImpure(tp.superType)
       case tp: (RefinedOrRecType | MatchType) =>
         instanceCanBeImpure(tp.underlying)
@@ -1026,7 +1022,7 @@ class Setup extends PreRecheck, SymTransformer, SetupAPI:
         if !ref.coreType.derivesFrom(defn.Caps_Capability)
             // Capability classes don't have their implied capture set yet, so
             // they would be seen as pure
-            && !ref.coreType.derivesFrom(defn.Caps_CapSet)
+            && !ref.coreType.derivesFromCapSet
         then
           if ref.captureSetOfInfo.elems.isEmpty then
             val deepStr = if ref.isReach then " deep" else ""

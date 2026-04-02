@@ -89,7 +89,7 @@ extension (tp: Type)
   def retainedElementsRaw(using Context): List[Type] = tp match
     case OrType(tp1, tp2) =>
       tp1.retainedElementsRaw ++ tp2.retainedElementsRaw
-    case AnnotatedType(tp1, ann: RetainingAnnotation) if tp1.derivesFrom(defn.Caps_CapSet) =>
+    case AnnotatedType(tp1, ann: RetainingAnnotation) if tp1.derivesFromCapSet =>
       ann.retainedType.retainedElementsRaw
     case tp =>
       tp.dealiasKeepAnnots match
@@ -108,7 +108,7 @@ extension (tp: Type)
   def retainedElements(using Context): List[Capability] =
     retainedElementsRaw.flatMap: elem =>
       elem match
-        case CapturingType(parent, refs) if parent.derivesFrom(defn.Caps_CapSet) =>
+        case CapturingType(parent, refs) if parent.derivesFromCapSet =>
           refs.elems.toList
         case _ =>
           elem.toCapability :: Nil
@@ -128,10 +128,10 @@ extension (tp: Type)
         || tp.symbol.isField && tp.prefix.isPrefixOfTrackableRef
         ) && !tp.symbol.isOneOf(UnstableValueFlags)
     case tp: TypeRef =>
-      tp.symbol.isType && tp.derivesFrom(defn.Caps_CapSet)
+      tp.symbol.isType && tp.derivesFromCapSet
     case tp: TypeParamRef =>
       !tp.underlying.exists // might happen during construction of lambdas
-      || tp.derivesFrom(defn.Caps_CapSet)
+      || tp.derivesFromCapSet
     case _ =>
       false
 
@@ -214,7 +214,7 @@ extension (tp: Type)
   def boxed(using Context): Type = tp.dealias match
     case tp @ CapturingType(parent, refs) if !tp.isBoxed && !refs.isAlwaysEmpty =>
       tp.annot match
-        case ann: CaptureAnnotation if !parent.derivesFrom(defn.Caps_CapSet) =>
+        case ann: CaptureAnnotation if !parent.derivesFromCapSet =>
           AnnotatedType(parent, ann.boxedAnnot)
         case ann => tp
     case tp: RealTypeBounds =>
@@ -240,10 +240,10 @@ extension (tp: Type)
   def boxDeeply(using Context): Type =
     def recur(tp: Type): Type = tp.dealiasKeepAnnotsAndOpaques match
       case tp @ CapturingType(parent, refs) =>
-        if tp.isBoxed || parent.derivesFrom(defn.Caps_CapSet) then tp
+        if tp.isBoxed || parent.derivesFromCapSet then tp
         else tp.boxed
       case tp @ AnnotatedType(parent, ann: RetainingAnnotation)
-      if !parent.derivesFrom(defn.Caps_CapSet) =>
+      if !parent.derivesFromCapSet =>
         assert(ann.isStrict)
         CapturingType(parent, ann.toCaptureSet, boxed = true)
       case tp @ AnnotatedType(parent, ann) =>
@@ -393,7 +393,8 @@ extension (tp: Type)
   def derivesFromCapTrait(cls: ClassSymbol)(using Context): Boolean = tp.dealiasKeepAnnots match
     case tp: (TypeRef | AppliedType) =>
       val sym = tp.typeSymbol
-      if sym.isClass then sym.derivesFrom(cls)
+      if sym.isClass
+      then (if sym.isArrayUnderStrictMut then defn.Caps_Mutable else sym).derivesFrom(cls)
       else tp.superType.derivesFromCapTrait(cls)
     case tp: (TypeProxy & ValueType) =>
       tp.superType.derivesFromCapTrait(cls)
@@ -404,18 +405,9 @@ extension (tp: Type)
     case _ =>
       false
 
-  def derivesFromCapability(using Context): Boolean =
-    derivesFromCapTrait(defn.Caps_Capability) || isArrayUnderStrictMut
-  def derivesFromExclusive(using Context): Boolean =
-    derivesFromCapTrait(defn.Caps_ExclusiveCapability) || isArrayUnderStrictMut
-  def derivesFromStateful(using Context): Boolean =
-    derivesFromCapTrait(defn.Caps_Stateful) || isArrayUnderStrictMut
-  def derivesFromShared(using Context): Boolean =
-    derivesFromCapTrait(defn.Caps_SharedCapability)
-  def derivesFromUnscoped(using Context): Boolean =
-    derivesFromCapTrait(defn.Caps_Unscoped) || isArrayUnderStrictMut
-  def derivesFromMutable(using Context): Boolean =
-    derivesFromCapTrait(defn.Caps_Mutable) || isArrayUnderStrictMut
+  def derivesFromStateful(using Context): Boolean = derivesFromCapTrait(defn.Caps_Stateful)
+  def derivesFromCapability(using Context): Boolean = derivesFromCapTrait(defn.Caps_Capability)
+  def derivesFromCapSet(using Context) = tp.derivesFrom(defn.Caps_CapSet)
 
   def isArrayUnderStrictMut(using Context): Boolean = tp.classSymbol.isArrayUnderStrictMut
 
@@ -558,13 +550,16 @@ extension (cls: ClassSymbol) {
       bc.is(CaptureChecked) && selfType.exists && selfType.captureSet.elems == refs.elems
 
   def isClassifiedCapabilityClass(using Context): Boolean =
-    cls.derivesFrom(defn.Caps_Capability) && cls.parentSyms.contains(defn.Caps_Classifier)
+    cls.derivesFromCapability && cls.parentSyms.contains(defn.Caps_Classifier)
 
   def classifier(using Context): ClassSymbol =
-    if cls.derivesFrom(defn.Caps_Capability) then
-      cls.baseClasses
-        .filter(_.parentSyms.contains(defn.Caps_Classifier))
-        .foldLeft(defn.AnyClass)(leastClassifier)
+    if cls.derivesFromCapability then
+      if cls.isArrayUnderStrictMut then
+        defn.Caps_Unscoped
+      else
+        cls.baseClasses
+          .filter(_.parentSyms.contains(defn.Caps_Classifier))
+          .foldLeft(defn.AnyClass)(leastClassifier)
     else defn.AnyClass
 
   /** The additional capture set implied by the capture sets of its fields. This
@@ -630,7 +625,7 @@ extension (cls: ClassSymbol) {
   }
 
   def creationCapset(using Context)(core: Type = cls.appliedRef): CaptureSet =
-    if cls.derivesFrom(defn.Caps_Capability)
+    if cls.derivesFromCapability
     then LocalCap(Origin.NewInstance(core, Nil)).singletonCaptureSet
     else cls.capturesImpliedByFields(core).refs
 
@@ -781,6 +776,9 @@ extension (sym: Symbol) {
 
   def isArrayUnderStrictMut(using Context): Boolean =
     sym == defn.ArrayClass && ccConfig.strictMutability
+
+  def derivesFromCapability(using Context): Boolean =
+    sym.derivesFrom(defn.Caps_Capability) || sym.isArrayUnderStrictMut
 
   def isDisallowedInCapset(using Context): Boolean =
     sym.isOneOf(if ccConfig.strictMutability then Method else UnstableValueFlags)
