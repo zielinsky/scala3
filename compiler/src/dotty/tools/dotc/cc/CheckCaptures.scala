@@ -114,7 +114,7 @@ object CheckCaptures:
     def check(elem: Type): Unit = elem match
       case ref: TypeRef =>
         val refSym = ref.symbol
-        if refSym.isType && !refSym.info.derivesFrom(defn.Caps_CapSet) then
+        if refSym.isType && !refSym.info.derivesFromCapSet then
           report.error(em"$elem is not a legal element of a capture set", ann.srcPos)
       case ref: CoreCapability =>
         if !ref.isTrackableRef && !ref.isLocalMutable then
@@ -414,7 +414,7 @@ class CheckCaptures extends Recheck, SymTransformer:
       private def descr(elem: CoreCapability, cls: Symbol)(using Context): String =
         def wrap(why: String) =
           i"\n\nNote that `${elem.showAsCapability}` is a capability $why."
-        if cls.isStaticOwner && !cls.derivesFrom(defn.Caps_Capability) then
+        if cls.isStaticOwner && !cls.derivesFromCapability then
           val uses = cls.useSet
           if !uses.elems.isEmpty then
             wrap(i"because it uses $uses")
@@ -1510,7 +1510,7 @@ class CheckCaptures extends Recheck, SymTransformer:
               cls.srcPos)
       // (2)
       if !isExemptFromExplicitChecks(cls)
-          && !cls.derivesFrom(defn.Caps_Capability)
+          && !cls.derivesFromCapability
           && capFields.nonEmpty
       then
         val fields =
@@ -2407,7 +2407,7 @@ class CheckCaptures extends Recheck, SymTransformer:
               else parent.nuType.captureSet.isExclusive()
             if parentIsExclusive && pcls != defn.Caps_ExclusiveCapability then
               val parentExclusivity =
-                if pcls.derivesFrom(defn.Caps_Capability)
+                if pcls.derivesFromCapability
                 then "is an exclusive capability"
                 else "retains exclusive capabilities"
               report.error(

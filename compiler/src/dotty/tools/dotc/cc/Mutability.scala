@@ -56,7 +56,7 @@ object Mutability:
     def isUpdateMethod(using Context): Boolean =
       sym.isAllOf(Mutable | Method)
         && (!sym.is(Accessor) || (sym.isSetter && sym.owner.derivesFrom(defn.Caps_Stateful) && !sym.field.hasAnnotation(defn.UntrackedCapturesAnnot)))
-      || ccConfig.strictMutability && sym.name == nme.update && sym == defn.Array_update
+      || sym.name == nme.update && sym.owner.isArrayUnderStrictMut
 
     /** A read-only member is a lazy val or a method that is not an update method. */
     def isReadOnlyMember(using Context): Boolean =
@@ -162,7 +162,7 @@ object Mutability:
     case actual @ CapturingType(parent, refs) =>
       val parent1 = adaptReadOnlyToExpected(parent, expected)
       val refs1 =
-        if parent1.derivesFrom(defn.Caps_Stateful)
+        if parent1.derivesFromStateful
             && expected.isValueType
             && (!expected.derivesFromStateful || expected.captureSet.isAlwaysReadOnly)
             && !expected.isSingleton

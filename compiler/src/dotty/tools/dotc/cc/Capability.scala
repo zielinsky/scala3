@@ -768,7 +768,7 @@ object Capabilities:
         case Maybe(y1) => this.stripMaybe.subsumes(y1)
         case ReadOnly(y1) => this.stripReadOnly.subsumes(y1)
         case Restricted(y1, cls) => this.stripRestricted(cls).subsumes(y1)
-        case y: TypeRef if y.derivesFrom(defn.Caps_CapSet) =>
+        case y: TypeRef if y.derivesFromCapSet =>
           // The upper and lower bounds don't have to be in the form of `CapSet^{...}`.
           // They can be other capture set variables, which are bounded by `CapSet`,
           // like `def test[X^, Y^, Z >: X <: Y]`.
@@ -785,7 +785,7 @@ object Capabilities:
           case Restricted(x1, cls) => y.isKnownClassifiedAs(cls) && x1.subsumes(y)
           case x: TermRef => viaInfo(x.info)(subsumingRefs(_, y))
           case x: TypeRef if assumedContainsOf(x).contains(y) => true
-          case x: TypeRef if x.derivesFrom(defn.Caps_CapSet) =>
+          case x: TypeRef if x.derivesFromCapSet =>
             x.info match
               case TypeBounds(CapturingType(_, lorefs), _) =>
                 lorefs.elems.exists(_.subsumes(y))
