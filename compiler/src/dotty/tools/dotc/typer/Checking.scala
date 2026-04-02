@@ -1563,6 +1563,8 @@ trait Checking {
    *  2. Check that parameterised `enum` cases do not extend java.lang.Enum.
    *  3. Check that only a static `enum` base class can extend java.lang.Enum.
    *  4. Check that user does not implement an `ordinal` method in the body of an enum class.
+   *  5. Check that an enum extending java.lang.Enum has no type parameters and
+   *     uses itself as the type argument to java.lang.Enum.
    */
   def checkEnum(cdef: untpd.TypeDef, cls: Symbol, firstParent: Symbol)(using Context): Unit = {
     def existingDef(sym: Symbol, clazz: ClassSymbol)(using Context): Symbol = // adapted from SyntheticMembers
@@ -1580,12 +1582,11 @@ trait Checking {
       if javaEnumBase.exists then
         javaEnumBase.argInfos match
           case typeArg :: Nil =>
-            val clsRef =
-              if cls.typeParams.isEmpty then cls.typeRef
-              else cls.typeRef.appliedTo(cls.typeParams.map(_.typeRef))
-            if !(typeArg =:= clsRef) then
+            if cls.typeParams.nonEmpty then
+              report.error(em"An enum extending java.lang.Enum cannot have type parameters", cdef.srcPos)
+            if !(typeArg =:= cls.typeRef) then
               report.error(
-                em"enum $cls extends ${javaEnumBase}, but the type argument $typeArg is not the same as $clsRef",
+                em"enum $cls extends java.lang.Enum[$typeArg], but the type argument must be the enum class itself",
                 cdef.srcPos)
           case _ =>
     def isEnumAnonCls =

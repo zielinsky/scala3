@@ -26,4 +26,10 @@ trait UBad extends U[UBad]
 
 enum E7 extends UBad { case X } // error
 
-enum E8 extends U[E7] { case X } // error
+// --- other cases ---
+
+enum E[+T] extends java.lang.Enum[E[_]] { // error
+  case S1, S2
+  case C extends E[Int]
+}
+
