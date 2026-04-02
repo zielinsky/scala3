@@ -25,3 +25,11 @@
 27 |enum E7 extends UBad { case X } // error
    |^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |enum class E7 extends java.lang.Enum[UBad], but the type argument must be the enum class itself
+-- Error: tests/neg/i11253.scala:31:5 ----------------------------------------------------------------------------------
+31 |enum E[+T] extends java.lang.Enum[E[_]] { // error
+   |^
+   |An enum extending java.lang.Enum cannot have type parameters
+   |
+32 |  case S1, S2
+33 |  case C extends E[Int]
+34 |}
