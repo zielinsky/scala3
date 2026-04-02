@@ -335,7 +335,7 @@ As an example, consider a class `Arr` which is modelled after `Array` and its im
 import scala.reflect.ClassTag
 
 class Arr[T: ClassTag](len: Int) extends Mutable:
-  private val arr: Array[T] = new Array[T](len)
+  private val arr: Array[T]^ = new Array[T](len)
   def apply(i: Int): T = arr(i)
   update def update(i: Int, x: T): Unit = arr(i) = x
 
