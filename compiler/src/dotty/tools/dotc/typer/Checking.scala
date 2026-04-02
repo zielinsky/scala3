@@ -1602,7 +1602,7 @@ trait Checking {
     if !isEnumAnonCls then
       if cdef.mods.isEnumCase then
         if isJavaEnum then
-          report.error(em"paramerized case is not allowed in an enum that extends java.lang.Enum", cdef.srcPos)
+          report.error(em"parameterized case is not allowed in an enum that extends java.lang.Enum", cdef.srcPos)
       else if cls.is(Case) || firstParent.is(Enum) then
         // Since enums are classes and Namer checks that classes don't extend multiple classes, we only check the class
         // parent.
