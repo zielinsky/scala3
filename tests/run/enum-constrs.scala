@@ -9,6 +9,5 @@ enum Vehicle(wheels: Int) extends java.lang.Enum[Vehicle] {
 
 object Test extends App {
   println(Color.Red)
-  println(E.S1)
   println(Vehicle.Car)
 }

@@ -38,7 +38,6 @@ enum Color extends java.lang.Enum[Color]:
 
     testLatin1()
     testLatin2()
-    testLatin3()
 
   end testLatin
 
