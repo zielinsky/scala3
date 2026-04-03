@@ -158,25 +158,38 @@ object SafeRefs {
         sym.hasAnnotation(defn.AssumeSafeAnnot)
         || isSafe(if sym.is(ModuleVal) then sym.moduleClass else sym.owner)
 
-    val (sym, checkLater) = tree match
-      case tree: New =>
-        (tree.tpt.tpe.classSymbol, false)
-      case tree: RefTree =>
-        val checkLater =
-          !tree.symbol.is(Method)
-          && pt.match
-            case pt: PathSelectionProto => pt.selector.isStatic
-            case _: SelectionProto => true
-            case _ => false
-        (tree.symbol, checkLater)
+    val sym = tree match
+      case tree: New => tree.tpt.symbol
+      case tree: RefTree => tree.symbol
+
+    def checkLater =
+      sym.isTerm && !sym.is(Method) && pt.match
+        case pt: PathSelectionProto => pt.selector.isStatic
+        case _: SelectionProto => true
+        case _ => false
+
+    def isStatic = tree match
+      case tree: Ident =>
+        // Idents might refer to inherited symbols of static objects.
+        // in this case we need to check whether the prefix is static
+        // For Selects this is not an issue since we have already checked
+        // the qualifier for safety. safemode-pkg-inherit.scala is a test case.
+        tree.tpe match
+          case NamedType(prefix, _) =>
+            prefix.dealias match
+              case prefix: ThisType => prefix.cls.isStatic
+              case prefix: TermRef => prefix.symbol.isStatic
+              case _ => sym.isStatic
+          case _ => sym.isStatic
+      case _ => sym.isStatic
 
     if Feature.safeEnabled
         && sym.exists
+        && !sym.is(Package)
         && checkNotRejected(sym, tree.srcPos)
         && !checkLater
-        && sym.isStatic // if it's not static it is local, a parameter, or comes from another symbol,
-                        // which has been checked
-        && !sym.is(Package)
+        && isStatic // if it's not static it is local, a parameter, or comes from another symbol,
+                   // which has been checked
         && !isSafe(sym)
     then
       fail(sym, "it is neither compiled in safe mode nor tagged with @assumedSafe", tree.srcPos)
