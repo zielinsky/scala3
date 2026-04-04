@@ -1179,6 +1179,7 @@ object Build {
       ),
       // Packaging configuration of the stdlib
       Compile / publishArtifact := true,
+      Compile / packageDoc / publishArtifact := false,
       Test    / publishArtifact := false,
       // Project specific target folder. sbt doesn't like having two projects using the same target folder
       target := target.value / "scala-library-nonbootstrapped",
@@ -1228,6 +1229,7 @@ object Build {
       emptyPublishedJarSettings,  // Validate JAR is empty (only META-INF)
       // Packaging configuration of the stdlib
       Compile / publishArtifact := true,
+      Compile / packageDoc / publishArtifact := false,
       Test    / publishArtifact := false,
       // Project specific target folder. sbt doesn't like having two projects using the same target folder
       target := target.value / "scala3-library-nonbootstrapped",
