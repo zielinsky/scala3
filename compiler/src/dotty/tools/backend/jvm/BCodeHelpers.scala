@@ -331,8 +331,8 @@ trait BCodeHelpers(val backendUtils: BackendUtils)(using ctx: Context) extends B
           // Fields have two special cases:
           if sym.isField then
             // we must use the getter if entered after erasure at memoize, see tests/generic-java-signatures/17069.scala for an example
-            if sym.denot.validFor.phaseId > erasurePhase.id then
-              if sym.getter.exist then
+            if sym.denot.validFor.firstPhaseId > erasurePhase.id then
+              if sym.getter.exists then
                 return sym.getter.denot.info.resultType
 
               // there might be a getter created after erasure by the mixin phase,
