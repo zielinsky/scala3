@@ -1584,7 +1584,7 @@ trait Checking {
           case typeArg :: Nil =>
             if cls.typeParams.nonEmpty then
               report.error(em"An enum extending java.lang.Enum cannot have type parameters", cdef.srcPos)
-            if !(typeArg =:= cls.typeRef) then
+            if typeArg.classSymbol ne cls then
               report.error(
                 em"enum $cls extends java.lang.Enum[$typeArg], but the type argument must be the enum class itself",
                 cdef.srcPos)
