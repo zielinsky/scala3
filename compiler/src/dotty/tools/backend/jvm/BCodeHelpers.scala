@@ -330,16 +330,17 @@ trait BCodeHelpers(val backendUtils: BackendUtils)(using ctx: Context) extends B
 
           // Fields have two special cases:
           if sym.isField then
-            // first, we must use the getter if entered after erasure, see tests/generic-java-signatures/17069.scala for an example
-            if sym.denot.validFor.firstPhaseId > erasurePhase.id && sym.getter.exists then
-              return sym.getter.denot.info.resultType
+            // we must use the getter if entered after erasure at memoize, see tests/generic-java-signatures/17069.scala for an example
+            if sym.denot.validFor.phaseId > erasurePhase.id then
+              if sym.getter.exist then
+                return sym.getter.denot.info.resultType
 
-            // second, mixins part 2: there might be a getter created after erasure by the mixin phase,
-            // and if so we must use the information that the mixin phase stored for it.
-            val mixinGetter = atPhase(mixinPhase.next) { sym.getter }
-            if mixinGetter.exists then mixinPhase.asInstanceOf[Mixin].mixinGenericInfos.get(mixinGetter) match
-              case Some(ExprType(genericInfo)) => return genericInfo // since we're looking for the getter, we get an ExprType
-              case _ => ()
+              // there might be a getter created after erasure by the mixin phase,
+              // and if so we must use the information that the mixin phase stored for it.
+              val mixinGetter = atPhase(mixinPhase.next) { sym.getter }
+              if mixinGetter.exists then mixinPhase.asInstanceOf[Mixin].mixinGenericInfos.get(mixinGetter) match
+                case Some(ExprType(genericInfo)) => return genericInfo // since we're looking for the getter, we get an ExprType
+                case _ => ()
 
           owner.denot.thisType.memberInfo(sym)
         }
