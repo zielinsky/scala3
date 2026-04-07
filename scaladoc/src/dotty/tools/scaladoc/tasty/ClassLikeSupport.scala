@@ -73,19 +73,20 @@ trait ClassLikeSupport:
     else if classDef.symbol.flags.is(Flags.Enum) then Kind.Enum(typeArgs, args)
     else Kind.Class(typeArgs, args)
 
-  private def usesClausesFor(classDef: ClassDef): List[UsesClause] =
-    def clauseFrom(symbol: Symbol, keyword: String): Option[UsesClause] =
+  private def usesClauseFor(classDef: ClassDef): Option[UsesClause] =
+    def clauseFrom(symbol: Symbol, initially: Boolean): Option[SSignature] =
       for
         annot <- symbol.annotations.find(_.tpe.typeSymbol.isRetains)
         refs <- retainedCaptureRefs(annot)
         if refs.nonEmpty
-      yield UsesClause(keyword, emitCaptureRefsSignature(using qctx)(refs)(using classDef, classDef.symbol))
+      yield emitCaptureRefsSignature(using qctx)(refs, addInitially = initially)(using classDef, classDef.symbol)
 
-    if !ccEnabled then Nil
+    if !ccEnabled then None
     else
-      val uses = clauseFrom(classDef.symbol, "uses")
-      val usesInit = clauseFrom(classDef.constructor.symbol, "uses_init")
-      List(uses, usesInit).flatten
+      val constrUses = clauseFrom(classDef.constructor.symbol, initially = true)
+      val classUses = clauseFrom(classDef.symbol, initially = false)
+      val allUses = constrUses.getOrElse(Nil) ++ classUses.getOrElse(Nil)
+      Option.unless(allUses.isEmpty)(UsesClause(allUses))
 
   def mkClass(classDef: ClassDef)(
     dri: DRI = classDef.symbol.dri,
@@ -151,7 +152,7 @@ trait ClassLikeSupport:
     ).copy(
       directParents = classDef.getParentsAsLinkToTypes,
       parents = supertypes,
-      usesClauses = usesClausesFor(classDef)
+      usesClause = usesClauseFor(classDef)
     )
 
     if summon[DocContext].args.generateInkuire then doInkuireStuff(classDef)
@@ -569,7 +570,7 @@ trait ClassLikeSupport:
     visibility = symbol.getVisibility(),
     modifiers = modifiers,
     annotations = symbol.getAnnotations(),
-    usesClauses = Nil,
+    usesClause = None,
     signature = signature,
     sources = symbol.source,
     origin = origin,

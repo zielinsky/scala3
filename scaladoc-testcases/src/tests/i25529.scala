@@ -10,7 +10,7 @@ class A extends SharedCapability:
 object ObjA extends ExclusiveCapability:
   val a: A^ = A()
 
-object ObjB uses_init ObjA: //expected: object ObjB uses_init ObjA
+object ObjB uses ObjA initially: //expected: object ObjB uses ObjA initially
   val x = ObjA.a.f()
 
 object ObjC uses ObjA: //expected: object ObjC uses ObjA
