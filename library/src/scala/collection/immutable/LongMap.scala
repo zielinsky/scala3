@@ -315,10 +315,16 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
   /** Updates the map, using the provided function to resolve conflicts if the key is already present.
    *
    *  Equivalent to
+   *  ```scala sc-name:updateWithExampleContext sc-hidden
+   *  val map = LongMap(1L -> "one", 2L -> "two")
+   *  val key = 2L
+   *  val value = "deux"
+   *  val f = (oldValue: String, newValue: String) => oldValue + "-" + newValue
    *  ```
-   *   this.get(key) match {
-   *     case None => this.update(key, value)
-   *     case Some(oldvalue) => this.update(key, f(oldvalue, value)
+   *  ```scala sc-compile-with:updateWithExampleContext
+   *   map.get(key) match {
+   *     case None => map.updated(key, value)
+   *     case Some(oldvalue) => map.updated(key, f(oldvalue, value))
    *   }
    *  ```
    *

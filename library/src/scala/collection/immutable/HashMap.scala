@@ -300,7 +300,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
   /** Merges this HashMap with an other HashMap by combining all key-value pairs of both maps, and delegating to a merge
    *  function to resolve any key collisions between the two HashMaps.
    *
-   *  @example ```
+   *  @example ```scala sc:compile
    *   val left = HashMap(1 -> 1, 2 -> 1)
    *   val right = HashMap(2 -> 2, 3 -> 2)
    *
@@ -318,7 +318,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
    *       found in `this` or `that`, it is not defined which value will be chosen. For example:
    *
    *       Colliding multiple results of merging:
-   *       ```
+   *       ```scala sc:compile
    *         // key `3` collides between a result of merging keys `1` and `2`
    *         val left = HashMap(1 -> 1, 2 -> 2)
    *         val right = HashMap(1 -> 1, 2 -> 2)
@@ -327,7 +327,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
    *           // HashMap(3 -> 2) is returned, but it could also have returned HashMap(3 -> 1)
    *       ```
    *       Colliding results of merging with other keys:
-   *       ```
+   *       ```scala sc:compile
    *         // key `2` collides between a result of merging `1`, and existing key `2`
    *         val left = HashMap(1 -> 1, 2 -> 1)
    *         val right = HashMap(1 -> 2)
@@ -2230,7 +2230,7 @@ private[immutable] final class HashMapBuilder[K, V] extends ReusableBuilder[(K, 
 
   /** The last given out HashMap as a return value of `result()`, if any, otherwise null.
    *  Indicates that on next add, the elements should be copied to an identical structure, before continuing
-   *  mutations. 
+   *  mutations.
    */
   @annotation.stableNull
   private var aliased: HashMap[K, V] | Null = compiletime.uninitialized

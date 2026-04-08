@@ -29,7 +29,7 @@ import scala.annotation.compileTimeOnly
  *  and `Range.BigDecimal`.  `Range.Int` exists for completeness, but
  *  the `Int`-based `scala.Range` should be more performant.
  *
- *  ```
+ *  ```scala sc:compile
  *     val r1 = Range(0, 100, 1)
  *     val veryBig = Int.MaxValue.toLong + 1
  *     val r2 = Range.Long(veryBig, veryBig + 100, 1)

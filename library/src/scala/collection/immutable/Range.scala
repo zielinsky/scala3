@@ -27,7 +27,7 @@ import scala.util.hashing.MurmurHash3
  *  It's a special case of an indexed sequence.
  *  For example:
  *
- *  ```
+ *  ```scala sc:compile
  *     val r1 = 0 until 10
  *     val r2 = r1.start until r1.end by r1.step + 1
  *     println(r2.length) // = 5
