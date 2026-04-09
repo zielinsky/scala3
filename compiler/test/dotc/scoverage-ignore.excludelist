@@ -81,7 +81,6 @@ skolems2.scala
 spurious-overload.scala
 sub-cases-exhaustivity.scala
 sub-cases-reachability.scala
-t10594.scala
 tailrec.scala
 traitParams.scala
 i25460.scala
