@@ -779,6 +779,8 @@ object Capabilities:
               this.subsumes(hi)
             case _ =>
               y.captureSetOfInfo.elems.forall(this.subsumes)
+        case y: ThisType if y.cls.is(Module) =>
+          this.subsumes(y.cls.sourceModule.termRef)
         case _ => false
       || this.match
           case Reach(x1) => x1.subsumes(y.stripReach)
@@ -793,6 +795,8 @@ object Capabilities:
                 lo.subsumes(y)
               case _ =>
                 x.captureSetOfInfo.elems.exists(_.subsumes(y))
+          case x: ThisType if x.cls.is(Module) =>
+            x.cls.sourceModule.termRef.subsumes(y)
           case _ => false
       catch case ex: AssertionError =>
         println(i"error while subsumes $this >> $y")
