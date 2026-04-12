@@ -516,6 +516,7 @@ object Capabilities:
         case tp1: (TermRef | TypeRef) => // can't use NamedType here since it is not a capability
           if tp1.symbol.maybeOwner.isClass && !tp1.symbol.is(TypeParam) then
             tp1.prefix match
+              case pre: ObjectCapability if pre.refersToPackage => tp1
               case pre: Capability => pre.pathRoot
               case _ => tp1
           else tp1

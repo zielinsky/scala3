@@ -136,9 +136,7 @@ extension (tp: Type)
       false
 
   private def isPrefixOfTrackableRef(using Context): Boolean =
-    isTrackableRef || tp.match
-      case tp: TermRef => tp.symbol.is(Package)
-      case _ => false
+    isTrackableRef || tp.refersToPackage
 
   /** The capture set of a type. This is:
     *   - For object capabilities: The singleton capture set consisting of
