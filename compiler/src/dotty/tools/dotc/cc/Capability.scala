@@ -532,6 +532,7 @@ object Capabilities:
     */
     final def pathOwner(using Context): Symbol = pathRoot match
       case tp1: ThisType => tp1.cls
+      case tp1: TermRef if tp1.symbol.is(Module) => tp1.symbol.moduleClass
       case tp1: NamedType => tp1.symbol.owner
       case _: GlobalCap => defn.CapsModule.moduleClass
       case tp1: LocalCap => tp1.ccOwner

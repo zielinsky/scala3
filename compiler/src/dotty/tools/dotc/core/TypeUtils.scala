@@ -231,7 +231,7 @@ class TypeUtils:
     /** If this type refers to a package, the class representing that package,
      *  otherwise NoSymbol.
      */
-    def packageClass(using Context): Symbol = self match
+    def packageClass(using Context): Symbol = self.stripped match
       case self: ThisType if self.cls.is(Package) => self.cls
       case self: TermRef if self.symbol.is(Package) => self.symbol.moduleClass
       case _ => NoSymbol
