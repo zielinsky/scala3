@@ -742,13 +742,14 @@ class CheckCaptures extends Recheck, SymTransformer:
         // that uses captured references.
         includeCallCaptures(sym, sym.info, tree)
 
-      if sym.exists && !sym.is(Method) && !sym.is(Package) then
+      if sym.exists && !sym.is(Package)
+          && !sym.is(Method) // if it's a method the call captures already cover the use set
+      then
         // Mark symbol as used, either as a path if it is a field of some tracked object
         // or by itself.
-        sym.maybeOwner.thisType match
-          case ref: ThisType
-          if ref.isTracked && sym.isTerm =>
-            markPathFree(ref, PathSelectionProto(sym, pt, tree), tree)
+        tree.tpe.stripped match
+          case TermRef(prefix: (TermRef | ThisType), _) if prefix.isTracked =>
+            markPathFree(prefix, PathSelectionProto(sym, pt, tree), tree)
           case _ =>
             markPathFree(sym.termRef, pt, tree)
 
