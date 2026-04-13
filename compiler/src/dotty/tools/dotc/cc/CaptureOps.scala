@@ -803,8 +803,11 @@ extension (sym: Symbol) {
   def useSet(using Context): CaptureSet =
     ccState.useSetCache.getOrElseUpdate(sym,
       sym.getAnnotation(defn.RetainsAnnot) match
-        case Some(ann: RetainingAnnotation) =>
-          try ann.toCaptureSet
+        case Some(ann) =>
+          // If we read from Tasty, the annotation is not a RetainingAnnotation but is
+          // instead a regular annotation of type TreeUnpickler#DeferredSymAndTree.
+          // Map it to a RetainingAnnotation now.
+          try RetainingAnnotation.fromAnnotation(ann).toCaptureSet
           catch case ex: IllegalCaptureRef =>
             report.error(em"Illegal capture reference: ${ex.getMessage}", sym.srcPos)
             CaptureSet.empty
