@@ -74,19 +74,23 @@ trait ClassLikeSupport:
     else Kind.Class(typeArgs, args)
 
   private def usesClauseFor(classDef: ClassDef): Option[UsesClause] =
-    def clauseFrom(symbol: Symbol, initially: Boolean): Option[SSignature] =
-      for
-        annot <- symbol.annotations.find(_.tpe.typeSymbol.isRetains)
-        refs <- retainedCaptureRefs(annot)
-        if refs.nonEmpty
-      yield emitCaptureRefsSignature(using qctx)(refs, addInitially = initially)(using classDef, classDef.symbol)
+    def refsFrom(symbol: Symbol, initially: Boolean): List[(qctx.reflect.TypeRepr, Boolean)] =
+      val pairs =
+        for
+          annot <- symbol.annotations.find(_.tpe.typeSymbol.isRetains)
+          refs <- retainedCaptureRefs(annot)
+          if refs.nonEmpty
+        yield refs.map(_ -> initially)
+      pairs.getOrElse(Nil)
 
     if !ccEnabled then None
     else
-      val constrUses = clauseFrom(classDef.constructor.symbol, initially = true)
-      val classUses = clauseFrom(classDef.symbol, initially = false)
-      val allUses = constrUses.getOrElse(Nil) ++ classUses.getOrElse(Nil)
-      Option.unless(allUses.isEmpty)(UsesClause(allUses))
+      val constrUses = refsFrom(classDef.constructor.symbol, initially = true)
+      val classUses = refsFrom(classDef.symbol, initially = false)
+      val allRefs = constrUses ++ classUses
+      Option.unless(allRefs.isEmpty)(
+        UsesClause(emitUseRefsSignature(using qctx)(allRefs)(using classDef, classDef.symbol))
+      )
 
   def mkClass(classDef: ClassDef)(
     dri: DRI = classDef.symbol.dri,
