@@ -1593,7 +1593,7 @@ class Typer(@constructorOnly nestingLevel: Int = 0) extends Namer
         val newCases = cases.map: cdef =>
           val newBody = ascribeType(cdef.body, pt)
           cpy.CaseDef(cdef)(body = newBody).withType(newBody.tpe)
-        cpy.Match(m)(selector, newCases).withType(TypeComparer.lub(newCases.map(_.tpe)))
+        cpy.Match(m)(selector, newCases).withType(TypeComparer.lub(newCases.tpes))
       case _ =>
         val target = pt.simplified
         val targetTpt = TypeTree(target, inferred = true)
