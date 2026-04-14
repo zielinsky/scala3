@@ -743,15 +743,20 @@ class CheckCaptures extends Recheck, SymTransformer:
         includeCallCaptures(sym, sym.info, tree)
 
       if sym.exists && !sym.is(Package)
-          && !sym.is(Method) // if it's a method the call captures already cover the use set
+          && !(sym.is(Method) && ctx.owner.isContainedIn(sym.owner.skipWeakOwner))
+            // if it's a method in some enclosing scope the call captures already cover the use set
+            // skipWeakOwner: Also exempt symbols in package objects of the source when referenced
+            // from classes in the same source.
       then
-        // Mark symbol as used, either as a path if it is a field of some tracked object
-        // or by itself.
+        // Mark symbol as used
+        //  - as a path if it is a member of some tracked object
+        //  - by itself if it is not a method
         tree.tpe.stripped match
           case TermRef(prefix: (TermRef | ThisType), _) if prefix.isTracked =>
             markPathFree(prefix, PathSelectionProto(sym, pt, tree), tree)
           case _ =>
-            markPathFree(sym.termRef, pt, tree)
+            if !sym.is(Method) then
+              markPathFree(sym.termRef, pt, tree)
 
       if sym.isMutableVar && sym.owner.isTerm && pt != LhsProto then
         // When we have `var x: A^{c} = ...` where `x` is a local variable then
