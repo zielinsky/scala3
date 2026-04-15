@@ -136,9 +136,7 @@ extension (tp: Type)
       false
 
   private def isPrefixOfTrackableRef(using Context): Boolean =
-    isTrackableRef || tp.match
-      case tp: TermRef => tp.symbol.is(Package)
-      case _ => false
+    isTrackableRef || tp.refersToPackage
 
   /** The capture set of a type. This is:
     *   - For object capabilities: The singleton capture set consisting of
@@ -805,8 +803,11 @@ extension (sym: Symbol) {
   def useSet(using Context): CaptureSet =
     ccState.useSetCache.getOrElseUpdate(sym,
       sym.getAnnotation(defn.RetainsAnnot) match
-        case Some(ann: RetainingAnnotation) =>
-          try ann.toCaptureSet
+        case Some(ann) =>
+          // If we read from Tasty, the annotation is not a RetainingAnnotation but is
+          // instead a regular annotation of type TreeUnpickler#DeferredSymAndTree.
+          // Map it to a RetainingAnnotation now.
+          try RetainingAnnotation.fromAnnotation(ann).toCaptureSet
           catch case ex: IllegalCaptureRef =>
             report.error(em"Illegal capture reference: ${ex.getMessage}", sym.srcPos)
             CaptureSet.empty
