@@ -159,7 +159,7 @@ object SafeRefs {
         || isSafe(if sym.is(ModuleVal) then sym.moduleClass else sym.owner)
 
     val sym = tree match
-      case tree: New => tree.tpt.symbol
+      case tree: New => tree.tpt.tpe.classSymbol
       case tree: RefTree => tree.symbol
 
     def checkLater =
