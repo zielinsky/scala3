@@ -501,37 +501,37 @@ final abstract class Char private extends AnyVal {
 
   /** Returns the product of this value and `x`.
    *
-   *  @param x the value to multiply with this value
+   *  @param x the value to multiply this value by
    */
   def *(x: Byte): Int
   /** Returns the product of this value and `x`.
    *
-   *  @param x the value to multiply with this value
+   *  @param x the value to multiply this value by
    */
   def *(x: Short): Int
   /** Returns the product of this value and `x`.
    *
-   *  @param x the value to multiply with this value
+   *  @param x the value to multiply this value by
    */
   def *(x: Char): Int
   /** Returns the product of this value and `x`.
    *
-   *  @param x the value to multiply with this value
+   *  @param x the value to multiply this value by
    */
   def *(x: Int): Int
   /** Returns the product of this value and `x`.
    *
-   *  @param x the value to multiply with this value
+   *  @param x the value to multiply this value by
    */
   def *(x: Long): Long
   /** Returns the product of this value and `x`.
    *
-   *  @param x the value to multiply with this value
+   *  @param x the value to multiply this value by
    */
   def *(x: Float): Float
   /** Returns the product of this value and `x`.
    *
-   *  @param x the value to multiply with this value
+   *  @param x the value to multiply this value by
    */
   def *(x: Double): Double
 

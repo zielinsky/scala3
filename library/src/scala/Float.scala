@@ -172,145 +172,145 @@ final abstract class Float private extends AnyVal {
 
   /** Returns the sum of this value and `x`.
    *
-   *  @param x the value to add
+   *  @param x the value to add to this value
    */
   def +(x: Byte): Float
   /** Returns the sum of this value and `x`.
    *
-   *  @param x the value to add
+   *  @param x the value to add to this value
    */
   def +(x: Short): Float
   /** Returns the sum of this value and `x`.
    *
-   *  @param x the value to add
+   *  @param x the value to add to this value
    */
   def +(x: Char): Float
   /** Returns the sum of this value and `x`.
    *
-   *  @param x the value to add
+   *  @param x the value to add to this value
    */
   def +(x: Int): Float
   /** Returns the sum of this value and `x`.
    *
-   *  @param x the value to add
+   *  @param x the value to add to this value
    */
   def +(x: Long): Float
   /** Returns the sum of this value and `x`.
    *
-   *  @param x the value to add
+   *  @param x the value to add to this value
    */
   def +(x: Float): Float
   /** Returns the sum of this value and `x`.
    *
-   *  @param x the value to add
+   *  @param x the value to add to this value
    */
   def +(x: Double): Double
 
   /** Returns the difference of this value and `x`.
    *
-   *  @param x the value to subtract
+   *  @param x the value to subtract from this value
    */
   def -(x: Byte): Float
   /** Returns the difference of this value and `x`.
    *
-   *  @param x the value to subtract
+   *  @param x the value to subtract from this value
    */
   def -(x: Short): Float
   /** Returns the difference of this value and `x`.
    *
-   *  @param x the value to subtract
+   *  @param x the value to subtract from this value
    */
   def -(x: Char): Float
   /** Returns the difference of this value and `x`.
    *
-   *  @param x the value to subtract
+   *  @param x the value to subtract from this value
    */
   def -(x: Int): Float
   /** Returns the difference of this value and `x`.
    *
-   *  @param x the value to subtract
+   *  @param x the value to subtract from this value
    */
   def -(x: Long): Float
   /** Returns the difference of this value and `x`.
    *
-   *  @param x the value to subtract
+   *  @param x the value to subtract from this value
    */
   def -(x: Float): Float
   /** Returns the difference of this value and `x`.
    *
-   *  @param x the value to subtract
+   *  @param x the value to subtract from this value
    */
   def -(x: Double): Double
 
   /** Returns the product of this value and `x`.
    *
-   *  @param x the other factor
+   *  @param x the value to multiply this value by
    */
   def *(x: Byte): Float
   /** Returns the product of this value and `x`.
    *
-   *  @param x the other factor
+   *  @param x the value to multiply this value by
    */
   def *(x: Short): Float
   /** Returns the product of this value and `x`.
    *
-   *  @param x the other factor
+   *  @param x the value to multiply this value by
    */
   def *(x: Char): Float
   /** Returns the product of this value and `x`.
    *
-   *  @param x the other factor
+   *  @param x the value to multiply this value by
    */
   def *(x: Int): Float
   /** Returns the product of this value and `x`.
    *
-   *  @param x the other factor
+   *  @param x the value to multiply this value by
    */
   def *(x: Long): Float
   /** Returns the product of this value and `x`.
    *
-   *  @param x the other factor
+   *  @param x the value to multiply this value by
    */
   def *(x: Float): Float
   /** Returns the product of this value and `x`.
    *
-   *  @param x the other factor
+   *  @param x the value to multiply this value by
    */
   def *(x: Double): Double
 
   /** Returns the quotient of this value and `x`.
    *
-   *  @param x the divisor
+   *  @param x the value to divide this value by
    */
   def /(x: Byte): Float
   /** Returns the quotient of this value and `x`.
    *
-   *  @param x the divisor
+   *  @param x the value to divide this value by
    */
   def /(x: Short): Float
   /** Returns the quotient of this value and `x`.
    *
-   *  @param x the divisor
+   *  @param x the value to divide this value by
    */
   def /(x: Char): Float
   /** Returns the quotient of this value and `x`.
    *
-   *  @param x the divisor
+   *  @param x the value to divide this value by
    */
   def /(x: Int): Float
   /** Returns the quotient of this value and `x`.
    *
-   *  @param x the divisor
+   *  @param x the value to divide this value by
    */
   def /(x: Long): Float
   /** Returns the quotient of this value and `x`.
    *
-   *  @param x the divisor
+   *  @param x the value to divide this value by
    */
   def /(x: Float): Float
   /** Returns the quotient of this value and `x`.
    *
-   *  @param x the divisor
+   *  @param x the value to divide this value by
    */
   def /(x: Double): Double
 

@@ -501,73 +501,73 @@ final abstract class Int private extends AnyVal {
 
   /** Returns the product of this value and `x`.
    *
-   *  @param x the value to multiply by
+   *  @param x the value to multiply this value by
    */
   def *(x: Byte): Int
   /** Returns the product of this value and `x`.
    *
-   *  @param x the value to multiply by
+   *  @param x the value to multiply this value by
    */
   def *(x: Short): Int
   /** Returns the product of this value and `x`.
    *
-   *  @param x the value to multiply by
+   *  @param x the value to multiply this value by
    */
   def *(x: Char): Int
   /** Returns the product of this value and `x`.
    *
-   *  @param x the value to multiply by
+   *  @param x the value to multiply this value by
    */
   def *(x: Int): Int
   /** Returns the product of this value and `x`.
    *
-   *  @param x the value to multiply by
+   *  @param x the value to multiply this value by
    */
   def *(x: Long): Long
   /** Returns the product of this value and `x`.
    *
-   *  @param x the value to multiply by
+   *  @param x the value to multiply this value by
    */
   def *(x: Float): Float
   /** Returns the product of this value and `x`.
    *
-   *  @param x the value to multiply by
+   *  @param x the value to multiply this value by
    */
   def *(x: Double): Double
 
   /** Returns the quotient of this value and `x`.
    *
-   *  @param x the divisor
+   *  @param x the value to divide this value by
    */
   def /(x: Byte): Int
   /** Returns the quotient of this value and `x`.
    *
-   *  @param x the divisor
+   *  @param x the value to divide this value by
    */
   def /(x: Short): Int
   /** Returns the quotient of this value and `x`.
    *
-   *  @param x the divisor
+   *  @param x the value to divide this value by
    */
   def /(x: Char): Int
   /** Returns the quotient of this value and `x`.
    *
-   *  @param x the divisor
+   *  @param x the value to divide this value by
    */
   def /(x: Int): Int
   /** Returns the quotient of this value and `x`.
    *
-   *  @param x the divisor
+   *  @param x the value to divide this value by
    */
   def /(x: Long): Long
   /** Returns the quotient of this value and `x`.
    *
-   *  @param x the divisor
+   *  @param x the value to divide this value by
    */
   def /(x: Float): Float
   /** Returns the quotient of this value and `x`.
    *
-   *  @param x the divisor
+   *  @param x the value to divide this value by
    */
   def /(x: Double): Double
 
