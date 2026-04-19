@@ -20,7 +20,7 @@ import typer.ProtoTypes.SelectionProto
 
 /** Check whether references from safe mode should be allowed */
 object SafeRefs {
-  
+
   val SkipAnnotsInType: Property.Key[Unit] = Property.Key()
 
   val assumedSafePackages = List(
@@ -60,6 +60,7 @@ object SafeRefs {
   def init()(using Context): Unit =
     assumeSafe("scala.Predef", except = List("print", "println", "printf"))
     assumeSafe("scala.runtime.coverage.Invoker")
+    assumeSafe("scala.reflect.ClassTag")
     assumeSafe("scala.util.Properties", except = List("setProp", "clearProp", "main"))
     assumeSafe("java.lang.Object")
     assumeSafe("java.lang.Boolean")
@@ -71,14 +72,15 @@ object SafeRefs {
     assumeSafe("java.lang.Long")
     assumeSafe("java.lang.Float")
     assumeSafe("java.lang.Double")
+    assumeSafe("java.lang.Void")
     assumeSafe("java.lang.Enum")
     assumeSafe("java.lang.Math")
     assumeSafe("java.lang.StrictMath")
     assumeSafe("java.lang.Number")
     assumeSafe("java.lang.String")
     assumeSafe("java.lang.Throwable")
-    assumeSafe("java.lang.Void")
     assumeSafe("java.lang.Exception")
+    assumeSafe("java.lang.IllegalArgumentException")
     assumeSafe("java.lang.CharSequence")
     assumeSafe("java.lang.Comparable")
     assumeSafe("java.lang.Class", except = List(
@@ -101,7 +103,7 @@ object SafeRefs {
     assumeSafe("java.util.OptionalInt")
     assumeSafe("java.util.OptionalLong")
     assumeSafe("java.util.OptionalDouble")
-    assumeSafe("scala.reflect.ClassTag")
+    assumeSafe("java.util.NoSuchElementException")
 
     rejectSafe("scala.Console")
     rejectSafe("scala.unchecked")
