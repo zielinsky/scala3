@@ -1292,7 +1292,6 @@ object Build {
       Compile / resourceGenerators += generateLibraryProperties.taskValue,
       bspEnabled := enableBspAllProjects,
       Compile / mainClass := None,
-
       Test / unmanagedSourceDirectories   := Seq(baseDirectory.value / "test"),
       Test / unmanagedResourceDirectories := Seq(baseDirectory.value / "test-resources"),
       libraryDependencies ++= Seq(
@@ -2200,7 +2199,7 @@ object Build {
       BuildInfoPlugin.buildInfoDefaultSettings
 
   lazy val presentationCompilerSettings = {
-    val mtagsVersion = "1.6.3"
+    val mtagsVersion = "1.6.7"
     Seq(
       libraryDependencies ++= Seq(
         "org.lz4" % "lz4-java" % "1.8.0",
