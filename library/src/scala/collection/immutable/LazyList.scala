@@ -62,7 +62,7 @@ import scala.runtime.Statics
  *  Here is an example showing the Fibonacci sequence,
  *  which may be evaluated to an arbitrary number of elements:
  *
- *  ```
+ *  ```scala sc:compile
  *  import scala.math.BigInt
  *  val fibs: LazyList[BigInt] =
  *    BigInt(0) #:: BigInt(1) #:: fibs.zip(fibs.tail).map(n => n._1 + n._2)
@@ -75,7 +75,7 @@ import scala.runtime.Statics
  *  To illustrate, let's add some output to the definition `fibs`, so we
  *  see what's going on.
  *
- *  ```
+ *  ```scala sc:compile
  *  import scala.math.BigInt
  *  import scala.util.chaining._
  *  val fibs: LazyList[BigInt] =
@@ -126,7 +126,7 @@ import scala.runtime.Statics
  *  Here's an example that illustrates these behaviors.
  *  Let's begin with an iteration of the natural numbers.
  *
- *  ```
+ *  ```scala sc:compile
  *  // We'll start with a silly iteration
  *  def loop(s: String, i: Int, iter: Iterator[Int]): Unit = {
  *    // Stop after 200,000
@@ -174,7 +174,7 @@ import scala.runtime.Statics
  *  If we defined `fibs` such that only `0` were concretely known, then the act
  *  of determining `tail` would require the evaluation of `tail`, so the
  *  computation would be unable to progress, as in this code:
- *  ```
+ *  ```scala sc:compile
  *  // The first time we try to access the tail we're going to need more
  *  // information which will require us to recurse, which will require us to
  *  // recurse, which...
@@ -186,7 +186,7 @@ import scala.runtime.Statics
  *  implementation provides a more "cost effective" implementation due to the
  *  fact that it has a more direct route to the numbers themselves:
  *
- *  ```
+ *  ```scala sc:compile
  *  lazy val fib: LazyList[Int] = {
  *    def loop(h: Int, n: Int): LazyList[Int] = h #:: loop(n, h + n)
  *    loop(1, 1)
@@ -206,7 +206,7 @@ import scala.runtime.Statics
  *
  *  For example:
  *
- *  ```
+ *  ```scala sc:compile
  *  def tailWithSideEffect: LazyList[Nothing] = {
  *    println("getting empty LazyList")
  *    LazyList.empty
@@ -232,7 +232,7 @@ import scala.runtime.Statics
  *  from itself, and is attempting to read the element currently being evaluated.
  *  As a trivial example:
  *
- *  ```
+ *  ```scala sc:compile
  *  lazy val a: LazyList[Int] = 1 #:: 2 #:: a.filter(_ > 2)
  *  ```
  *
@@ -362,7 +362,7 @@ final class LazyList[+A] private (lazyState: AnyRef /* EmptyMarker.type | () => 
    *  This method detects cycles in lazy lists, and terminates after all
    *  elements of the cycle are evaluated. For example:
    *
-   *  ```
+   *  ```scala sc:compile
    *  val ring: LazyList[Int] = 1 #:: 2 #:: 3 #:: ring
    *  ring.force
    *  ring.toString

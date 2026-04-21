@@ -25,7 +25,7 @@ import scala.collection.mutable.Builder
  *  Allows for range queries to be performed on its keys, and implementations must guarantee that traversal happens in
  *  sorted order, according to the map's [[scala.math.Ordering]].
  *
- *  @example ```
+ *  @example ```scala sc:compile
  *  import scala.collection.immutable.SortedMap
  *
  *  // Make a SortedMap via the companion object factory
