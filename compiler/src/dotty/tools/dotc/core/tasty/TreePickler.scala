@@ -3,8 +3,6 @@ package dotc
 package core
 package tasty
 
-import scala.language.unsafeNulls
-
 import dotty.tools.tasty.TastyFormat.*
 import dotty.tools.tasty.besteffort.BestEffortTastyFormat.ERRORtype
 import dotty.tools.tasty.TastyBuffer.*
@@ -471,7 +469,10 @@ class TreePickler(pickler: TastyPickler, attributes: Attributes) {
                 writeByte(QUALTHIS)
                 pickleTree(qual.withType(tref))
               case _: ErrorType if ctx.isBestEffort =>
-                pickleTree(qual)
+                if qual.hasType then
+                  pickleTree(qual.asInstanceOf[Tree]) // it has a type, so it's a valid tpd.Tree
+                else
+                  pickleErrorType()
               case _ => pickleCapturedThis
         case Select(qual, name) =>
           name match {

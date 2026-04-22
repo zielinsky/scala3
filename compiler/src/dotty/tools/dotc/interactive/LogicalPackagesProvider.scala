@@ -13,7 +13,6 @@ import dotty.tools.io.Path
 
 import java.io.File
 import scala.collection.mutable
-import scala.language.unsafeNulls
 import scala.util.control.NonFatal
 
 /**
@@ -148,7 +147,7 @@ class LogicalPackagesProvider(sourcePath: String)(using Context){
       if isRelevantFile(e)
       f <- Option(AbstractFile.getFile(e))
     } yield f
-    rootFiles ++ rootDirs.flatMap(dir => sourcesIn(AbstractFile.getDirectory(dir), "scala", "java"))
+    rootFiles ++ rootDirs.flatMap(dir => sourcesIn(AbstractFile.getDirectory(dir).nn, "scala", "java"))
   }
 
   /**
