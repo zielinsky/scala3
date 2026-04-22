@@ -1,16 +1,10 @@
 import java.io.File
 import java.nio.file._
-import Process._
-import Modes._
 import ScaladocGeneration._
 import com.jsuereth.sbtpgp.PgpKeys
 import sbt.Keys.*
 import sbt.*
-import sbt.nio.FileStamper
-import sbt.nio.Keys.*
 import complete.DefaultParsers._
-import pl.project13.scala.sbt.JmhPlugin
-import pl.project13.scala.sbt.JmhPlugin.JmhKeys.Jmh
 import com.typesafe.sbt.packager.Keys._
 import com.typesafe.sbt.packager.MappingsHelper.directory
 import com.typesafe.sbt.packager.universal.UniversalPlugin
@@ -24,22 +18,15 @@ import dotty.tools.sbtplugin.RepublishPlugin.autoImport._
 import dotty.tools.sbtplugin.ScalaLibraryPlugin
 import dotty.tools.sbtplugin.ScalaLibraryPlugin.autoImport._
 import dotty.tools.sbtplugin.DottyJSPlugin
-import dotty.tools.sbtplugin.DottyJSPlugin.autoImport._
 
-import sbt.plugins.SbtPlugin
 import sbt.ScriptedPlugin.autoImport._
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
-import org.scalajs.sbtplugin.ScalaJSPlugin
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 
 import org.scalajs.linker.interface.ESVersion
 
 import sbtbuildinfo.BuildInfoPlugin
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
-import sbttastymima.TastyMiMaPlugin
-import sbttastymima.TastyMiMaPlugin.autoImport._
-
-import scala.util.Properties.isJavaAtLeast
 
 import scala.xml.{Node => XmlNode, NodeSeq => XmlNodeSeq, _}
 import scala.xml.transform.{RewriteRule, RuleTransformer}
@@ -874,10 +861,10 @@ object Build {
           extraClasspath ++= Seq(".")
 
         if (args0.contains("-with-compiler")) {
-          val dottyInterfaces = (`scala3-interfaces` / Compile / packageBin).value.getAbsolutePath.toString
-          val dottyStaging = (`scala3-staging` / Compile / packageBin).value.getAbsolutePath.toString
-          val dottyTastyInspector = (`scala3-tasty-inspector` / Compile / packageBin).value.getAbsolutePath.toString
-          val tastyCore = (`tasty-core-bootstrapped` / Compile / packageBin).value.getAbsolutePath.toString
+          val dottyInterfaces = (`scala3-interfaces` / Compile / packageBin).value.getAbsolutePath
+          val dottyStaging = (`scala3-staging` / Compile / packageBin).value.getAbsolutePath
+          val dottyTastyInspector = (`scala3-tasty-inspector` / Compile / packageBin).value.getAbsolutePath
+          val tastyCore = (`tasty-core-bootstrapped` / Compile / packageBin).value.getAbsolutePath
           val asm = findArtifactPath(externalDeps, "scala-asm")
           val compilerInterface = findArtifactPath(externalDeps, "compiler-interface")
           extraClasspath ++= Seq(dottyCompiler, dottyInterfaces, asm, dottyStaging, dottyTastyInspector, tastyCore, compilerInterface)
@@ -1203,6 +1190,8 @@ object Build {
       // Generate library.properties, used by scala.util.Properties
       Compile / resourceGenerators += generateLibraryProperties.taskValue,
       Compile / mainClass := None,
+      // Workaround for #25897
+      Compile / compile / scalacOptions += "-Wconf:cat=deprecation&origin=scala\\.collection\\.Iterable\\.stringPrefix:s",
 
       Test / unmanagedSourceDirectories   := Seq(baseDirectory.value / "test"),
       Test / unmanagedResourceDirectories := Seq(baseDirectory.value / "test-resources"),
@@ -1275,6 +1264,8 @@ object Build {
         // Needed so that the library sources are visible when `dotty.tools.dotc.core.Definitions#init` is called
         "-sourcepath", (Compile / sourceDirectories).value.map(_.getCanonicalPath).distinct.mkString(File.pathSeparator),
       ),
+      // Workaround for #25897
+      Compile / compile / scalacOptions += "-Wconf:cat=deprecation&origin=scala\\.collection\\.Iterable\\.stringPrefix:s",
       // Packaging configuration of the stdlib
       Compile / publishArtifact := true,
       Test    / publishArtifact := false,
@@ -1365,7 +1356,7 @@ object Build {
       // sbt defaults to scala 2.12.x and metals will report issues as it doesn't consider the project a scala 3 project
       // (not the actual version we use to compile the project)
       scalaVersion  := dottyNonBootstrappedVersion,
-      // Add the source directories for the stdlib (non-boostrapped)
+      // Add the source directories for the stdlib (non-bootstrapped)
       Compile / unmanagedSourceDirectories := Seq(baseDirectory.value / "src"),
       Compile / unmanagedSourceDirectories ++=
         (`scala-library-bootstrapped` / Compile / unmanagedSourceDirectories).value,
@@ -1379,6 +1370,7 @@ object Build {
           Nil
         }
       },
+      Compile / compile / scalacOptions += "-Wconf:any:s",
       // Packaging configuration of the stdlib
       Compile / publishArtifact := true,
       Test    / publishArtifact := false,
@@ -2890,11 +2882,6 @@ object Build {
   }
 
   implicit class ProjectDefinitions(val project: Project) extends AnyVal {
-
-    /*def asDottyBench(implicit mode: Mode): Project = project.withCommonSettings.
-      dependsOn(dottyCompiler).
-      settings(commonBenchmarkSettings).
-      enablePlugins(JmhPlugin)*/
 
     def asDist: Project = project
       .enablePlugins(UniversalPlugin, RepublishPlugin)
