@@ -550,8 +550,34 @@ object SpaceEngine {
     if tp1 == ConstantType(Constant(null)) && !ctx.mode.is(Mode.SafeNulls)
     then tp2 == ConstantType(Constant(null))
     else if tp1.isTupleXXLExtract(tp2) then true // See isTupleXXLExtract, fixes TupleXXL parameter type
+    else if isTupleOfAnyArity(tp1) && knownTupleArity(tp2).isDefined then false
     else tp1 <:< tp2
   }
+
+  /** The number of elements of `tp`, if it is a tuple type of a fixed arity.
+   *
+   *  Wildcards are approximated by their bounds first, so that a bounded tail such as
+   *  `<? <: Int *: EmptyTuple>` counts as the one element it can hold, rather than as
+   *  an unknown number of them.
+   */
+  private def knownTupleArity(tp: Type)(using Context): Option[Int] =
+    AvoidWildcardsMap()(tp).tupleElementTypes.map(_.length)
+
+  /** Is `tp` a generic tuple of no fixed arity, such as the `? *: <? <: Tuple>` that
+   *  `decompose` produces for a non-empty tuple? It stands for tuples of *every* arity,
+   *  so no tuple type of a fixed arity can contain it.
+   *
+   *  Subtyping does not see it that way: it reads the wildcard tail as one it may
+   *  instantiate, finds `Nothing <: EmptyTuple`, and so places that space inside
+   *  `? *: EmptyTuple` - the 1-tuples alone - reporting reachable cases as
+   *  unreachable (i27231).
+   *
+   *  The line drawn here is the one the runtime draws: a type test against a TupleN
+   *  checks the arity, while a test against any `*:` application only checks for a
+   *  non-empty tuple (see the `PairClass` case of `TypeTestsCasts.transformTypeTest`).
+   */
+  private def isTupleOfAnyArity(tp: Type)(using Context): Boolean =
+    tp.isGenericTuple && knownTupleArity(tp).isEmpty
 
   /** True if we can assume that the two unapply methods are the same.
    *  That is, given the same parameter, they return the same result.
